@@ -1,0 +1,829 @@
+.map-container {
+  padding: 2rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* 搜索框样式 */
+.map-search-container {
+  max-width: 1400px;
+  margin: 0 auto 2rem auto;
+  padding: 0 1rem;
+  position: relative;
+}
+
+.search-box {
+  display: flex;
+  background: white;
+  border-radius: 25px;
+  box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+  overflow: hidden;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-input {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.search-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: background 0.3s ease;
+}
+
+.search-btn:hover {
+  background: var(--primary-dark);
+}
+
+.search-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.search-results, .search-history {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 5px;
+}
+
+.search-result-item, .history-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.search-result-item:hover, .history-item:hover {
+  background: #f8f9fa;
+}
+
+.search-result-item:last-child, .history-item:last-child {
+  border-bottom: none;
+}
+
+.result-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.result-address {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.history-title {
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 0.9rem;
+}
+
+.no-results {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.map-content {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  height: 600px;
+  margin-bottom: 3rem;
+}
+
+.map-sidebar {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+
+.poi-filters {
+  margin-bottom: 2rem;
+}
+
+.poi-filters h3 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  color: #495057;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.filter-btn:hover {
+  background: #e9ecef;
+}
+
+.filter-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.poi-list h3 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.poi-item {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.poi-item:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.poi-item.selected {
+  border-color: #667eea;
+  background: #e8f4fd;
+}
+
+.poi-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.poi-icon {
+  font-size: 1.5rem;
+}
+
+.poi-info {
+  flex: 1;
+}
+
+.poi-info h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.poi-type {
+  background: #3498db;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+  display: inline-block;
+}
+
+.poi-rating {
+  color: #f39c12;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.poi-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.poi-tips {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.5rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* 自定义标记样式 */
+.custom-markers-section {
+  margin-top: 2rem;
+  border-top: 2px solid #e9ecef;
+  padding-top: 1.5rem;
+}
+
+.custom-markers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.custom-markers-header h3 {
+  color: #333;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.custom-markers-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.export-btn, .import-btn, .clear-btn {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+}
+
+.export-btn:hover, .import-btn:hover {
+  background: #e9ecef;
+}
+
+.clear-btn:hover {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.export-btn:disabled, .clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.custom-markers-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.custom-marker-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.custom-marker-item:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.marker-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.marker-icon {
+  font-size: 1.5rem;
+}
+
+.marker-info {
+  flex: 1;
+}
+
+.marker-note {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.marker-type {
+  font-size: 0.8rem;
+  color: #666;
+  background: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.marker-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-marker-btn, .delete-marker-btn, .locate-marker-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.edit-marker-btn:hover {
+  background: #fff3cd;
+}
+
+.delete-marker-btn:hover {
+  background: #f8d7da;
+}
+
+.locate-marker-btn:hover {
+  background: #d1ecf1;
+}
+
+.no-custom-markers {
+  text-align: center;
+  color: #666;
+  padding: 2rem 1rem;
+  font-style: italic;
+}
+
+.no-custom-markers p {
+  margin: 0.5rem 0;
+}
+
+.map-wrapper {
+  position: relative;
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.baidu-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 15px;
+}
+
+.selected-poi-info {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  max-width: 300px;
+  z-index: 1000;
+}
+
+.poi-detail h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.poi-detail p {
+  margin: 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.poi-meta {
+  display: flex;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.poi-meta .rating {
+  color: #f39c12;
+  font-weight: bold;
+}
+
+.poi-meta .type {
+  background: #3498db;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+}
+
+.poi-tip {
+  background: #e8f4fd;
+  color: #2980b9;
+  padding: 0.5rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: #c0392b;
+}
+
+.map-tips {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 20px;
+}
+
+.map-tips h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  border-left: 4px solid white;
+  padding-left: 1rem;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.tip-item {
+  background: rgba(255,255,255,0.1);
+  padding: 1.5rem;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.tip-item h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.tip-item p {
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.25rem;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.modal-close-btn:hover {
+  background: #f8f9fa;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.marker-type-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+
+.type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.type-btn:hover {
+  border-color: #3498db;
+  background: #f8f9fa;
+}
+
+.type-btn.active {
+  border-color: #3498db;
+  background: #e8f4fd;
+}
+
+.type-icon {
+  font-size: 1.5rem;
+}
+
+.type-name {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.note-textarea:focus {
+  border-color: #3498db;
+}
+
+.location-info {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.modal-footer .cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.modal-footer .cancel-btn:hover {
+  background: #5a6268;
+}
+
+.modal-footer .save-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.modal-footer .save-btn:hover {
+  background: #218838;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .map-content {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .search-box {
+    margin: 0;
+  }
+
+  .search-input {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .search-btn {
+    padding: 0.75rem 1rem;
+  }
+
+  .map-content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .map-sidebar {
+    order: 2;
+    height: 400px;
+  }
+
+  .map-wrapper {
+    order: 1;
+    height: 400px;
+  }
+
+  .selected-poi-info {
+    position: static;
+    margin-top: 1rem;
+    max-width: none;
+  }
+
+  .custom-markers-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .marker-type-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal-content {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+
+  .modal-header, .modal-body, .modal-footer {
+    padding: 1rem;
+  }
+
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .search-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  .filter-buttons {
+    flex-direction: column;
+  }
+
+  .filter-btn {
+    text-align: center;
+  }
+
+  .poi-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .poi-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .custom-markers-controls {
+    justify-content: center;
+  }
+
+  .marker-type-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .marker-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .marker-actions {
+    align-self: stretch;
+    justify-content: space-around;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer .cancel-btn,
+  .modal-footer .save-btn {
+    width: 100%;
+  }
+}

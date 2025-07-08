@@ -1,0 +1,396 @@
+.accommodation {
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.accommodation-section {
+  margin-bottom: 3rem;
+}
+
+.accommodation-section h3 {
+  font-size: 1.8rem;
+  color: #444;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #9b59b6;
+  padding-left: 1rem;
+}
+
+.hotels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.hotel-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hotel-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.hotel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.hotel-icon {
+  font-size: 2.5rem;
+}
+
+.hotel-basic {
+  flex: 1;
+}
+
+.hotel-basic h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.hotel-type {
+  background: #3498db;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  margin-right: 0.5rem;
+}
+
+.rating {
+  margin-top: 0.5rem;
+  color: #f39c12;
+  font-weight: bold;
+}
+
+.price-tag {
+  background: #27ae60;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-weight: bold;
+  text-align: center;
+  min-width: 120px;
+}
+
+.hotel-info {
+  space-y: 1rem;
+}
+
+.location-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.features {
+  margin-bottom: 1rem;
+}
+
+.features h5 {
+  margin: 0 0 0.75rem 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.feature-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feature-tag {
+  background: #e8f4fd;
+  color: #2980b9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+}
+
+.pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pros h5, .cons h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.pros ul, .cons ul {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+}
+
+.pros li {
+  color: #27ae60;
+}
+
+.cons li {
+  color: #e74c3c;
+}
+
+.hotel-recommendation, .booking-info {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: #fff3cd;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.booking-info {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.area-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.area-card:hover {
+  transform: translateY(-3px);
+}
+
+.area-icon {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.area-card h4 {
+  color: #333;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.area-card p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.area-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.advantages h5, .disadvantages h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.advantages ul, .disadvantages ul {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+}
+
+.advantages li {
+  color: #27ae60;
+}
+
+.disadvantages li {
+  color: #e74c3c;
+}
+
+.area-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.transport-info, .recommendation {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.recommendation {
+  margin-bottom: 0;
+}
+
+.booking-platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.platform-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.platform-card:hover {
+  transform: translateY(-3px);
+}
+
+.platform-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.platform-icon {
+  font-size: 2rem;
+}
+
+.platform-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+.platform-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-badge {
+  background: #e8f4fd;
+  color: #2980b9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+}
+
+.platform-tips {
+  background: #fff3cd;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #856404;
+  font-style: italic;
+}
+
+.accommodation-tips {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 20px;
+  margin-top: 3rem;
+}
+
+.accommodation-tips h3 {
+  color: white;
+  border-left: 4px solid white;
+  margin-bottom: 1.5rem;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.tip-card {
+  background: rgba(255,255,255,0.1);
+  padding: 1.5rem;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.tip-card h4 {
+  margin: 0 0 1rem 0;
+  color: white;
+}
+
+.tip-card p {
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .accommodation {
+    padding: 1rem 0.5rem;
+  }
+  
+  .hotels-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hotel-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .location-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .pros-cons {
+    grid-template-columns: 1fr;
+  }
+  
+  .areas-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .area-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .booking-platforms {
+    grid-template-columns: 1fr;
+  }
+  
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+}
