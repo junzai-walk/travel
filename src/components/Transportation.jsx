@@ -177,6 +177,61 @@ const Transportation = () => {
           </div>
         </div>
       </div>
+
+      {/* 滚动测试区域 */}
+      <div className="scroll-test-section" style={{
+        marginTop: '40px',
+        padding: '20px',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '10px',
+        border: '2px dashed #dee2e6'
+      }}>
+        <h3 style={{ color: '#495057', marginBottom: '20px' }}>📋 滚动重置测试区域</h3>
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+          marginBottom: '20px'
+        }}>
+          <h4>🧪 测试说明</h4>
+          <p>这个区域用于测试页面滚动重置功能：</p>
+          <ol>
+            <li>向下滚动到这个区域</li>
+            <li>点击导航栏切换到其他页面（如首页、美食推荐等）</li>
+            <li>再切换回交通指南页面</li>
+            <li>页面应该自动滚动到顶部，而不是停留在这个位置</li>
+          </ol>
+        </div>
+
+        {/* 生成一些测试内容 */}
+        {Array.from({ length: 10 }, (_, i) => (
+          <div key={i} style={{
+            padding: '15px',
+            margin: '10px 0',
+            backgroundColor: i % 2 === 0 ? '#ffffff' : '#f1f3f4',
+            borderRadius: '8px',
+            border: '1px solid #e0e0e0'
+          }}>
+            <h4>测试内容块 {i + 1}</h4>
+            <p>这是交通指南页面的第 {i + 1} 个测试内容块。</p>
+            <p>当您从其他页面切换回来时，页面应该自动滚动到顶部。</p>
+            <p>如果您能看到这个内容块，说明页面没有正确重置滚动位置。</p>
+          </div>
+        ))}
+
+        <div style={{
+          padding: '20px',
+          backgroundColor: '#d4edda',
+          border: '2px solid #c3e6cb',
+          borderRadius: '8px',
+          textAlign: 'center',
+          marginTop: '20px'
+        }}>
+          <h4>🎉 交通指南页面底部</h4>
+          <p>如果您能看到这里，说明您已经滚动到了页面底部！</p>
+          <p>现在请切换到其他页面，然后再回到这里测试滚动重置功能。</p>
+        </div>
+      </div>
     </div>
   );
 };
