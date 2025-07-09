@@ -242,61 +242,6 @@ const Food = () => {
           </div>
         </div>
       </div>
-
-      {/* 滚动测试区域 */}
-      <div className="scroll-test-section" style={{
-        marginTop: '40px',
-        padding: '20px',
-        backgroundColor: '#fff8e1',
-        borderRadius: '10px',
-        border: '2px dashed #ffcc02'
-      }}>
-        <h3 style={{ color: '#f57c00', marginBottom: '20px' }}>🍜 美食页面滚动测试</h3>
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#fff3e0',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
-          <h4>🧪 测试步骤</h4>
-          <p>验证美食推荐页面的滚动重置功能：</p>
-          <ol>
-            <li>滚动到这个橙色测试区域</li>
-            <li>切换到其他页面（交通指南、住宿推荐等）</li>
-            <li>再次点击"美食推荐"回到本页面</li>
-            <li>页面应该显示顶部内容，而不是这个测试区域</li>
-          </ol>
-        </div>
-
-        {/* 生成美食相关的测试内容 */}
-        {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} style={{
-            padding: '15px',
-            margin: '10px 0',
-            backgroundColor: i % 2 === 0 ? '#ffffff' : '#fef7e0',
-            borderRadius: '8px',
-            border: '1px solid #ffcc02'
-          }}>
-            <h4>🍽️ 美食测试内容 {i + 1}</h4>
-            <p>这是美食推荐页面的测试内容块 {i + 1}。</p>
-            <p>包含了徐州特色美食的相关信息和推荐。</p>
-            <p>如果页面切换后还能看到这个内容，说明滚动位置没有正确重置。</p>
-          </div>
-        ))}
-
-        <div style={{
-          padding: '20px',
-          backgroundColor: '#e8f5e8',
-          border: '2px solid #4caf50',
-          borderRadius: '8px',
-          textAlign: 'center',
-          marginTop: '20px'
-        }}>
-          <h4>🎉 美食推荐页面底部</h4>
-          <p>恭喜！您已经浏览完了所有美食推荐内容。</p>
-          <p>现在请测试页面切换的滚动重置功能吧！</p>
-        </div>
-      </div>
     </div>
   );
 };
