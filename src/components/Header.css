@@ -16,6 +16,7 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .logo h1 {
@@ -28,6 +29,22 @@
   margin: 0.25rem 0 0 0;
   font-size: 0.9rem;
   opacity: 0.9;
+}
+
+/* 头部搜索样式 */
+.header-search {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .header-search {
+    order: 3;
+    flex-basis: 100%;
+    margin: 1rem 0 0 0;
+    max-width: none;
+  }
 }
 
 .nav {

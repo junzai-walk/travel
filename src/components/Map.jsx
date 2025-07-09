@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import SearchComponent from './SearchComponent';
+import { globalSearchEngine } from '../utils/searchData';
 import './Map.css';
 
 const Map = () => {
@@ -6,12 +8,9 @@ const Map = () => {
   const [map, setMap] = useState(null);
   const [selectedPoi, setSelectedPoi] = useState(null);
 
-  // 搜索相关状态
-  const [searchQuery, setSearchQuery] = useState('');
+  // 搜索相关状态 - 使用新的搜索系统
   const [searchResults, setSearchResults] = useState([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchHistory, setSearchHistory] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [selectedSearchResult, setSelectedSearchResult] = useState(null);
 
   // 自定义标记相关状态
   const [customMarkers, setCustomMarkers] = useState([]);
@@ -23,6 +22,10 @@ const Map = () => {
     type: 'favorite',
     color: 'red'
   });
+
+  // 地图标记引用
+  const [mapMarkers, setMapMarkers] = useState([]);
+  const [highlightedMarker, setHighlightedMarker] = useState(null);
   const [editingMarker, setEditingMarker] = useState(null);
 
   // 标记类型配置
@@ -127,16 +130,6 @@ const Map = () => {
 
   // 加载本地数据
   useEffect(() => {
-    // 加载搜索历史
-    const savedSearchHistory = localStorage.getItem('xuzhou-map-search-history');
-    if (savedSearchHistory) {
-      try {
-        setSearchHistory(JSON.parse(savedSearchHistory));
-      } catch (error) {
-        console.error('Error loading search history:', error);
-      }
-    }
-
     // 加载自定义标记
     const savedCustomMarkers = localStorage.getItem('xuzhou-map-custom-markers');
     if (savedCustomMarkers) {
@@ -152,13 +145,6 @@ const Map = () => {
   const saveCustomMarkers = (markers) => {
     localStorage.setItem('xuzhou-map-custom-markers', JSON.stringify(markers));
     setCustomMarkers(markers);
-  };
-
-  // 保存搜索历史到localStorage
-  const saveSearchHistory = (history) => {
-    const limitedHistory = history.slice(0, 10); // 最多保存10条
-    localStorage.setItem('xuzhou-map-search-history', JSON.stringify(limitedHistory));
-    setSearchHistory(limitedHistory);
   };
 
   useEffect(() => {
@@ -192,10 +178,15 @@ const Map = () => {
       mapInstance.addControl(new window.BMap.OverviewMapControl());
 
       // 添加POI标记
+      const markers = [];
       pois.forEach(poi => {
         const poiPoint = new window.BMap.Point(poi.lng, poi.lat);
         const marker = new window.BMap.Marker(poiPoint);
-        
+
+        // 存储POI信息到marker对象
+        marker.poiData = poi;
+        markers.push(marker);
+
         mapInstance.addOverlay(marker);
 
         // 创建信息窗口
@@ -213,6 +204,9 @@ const Map = () => {
           setSelectedPoi(poi);
         });
       });
+
+      // 保存标记引用
+      setMapMarkers(markers);
 
       // 添加右键点击事件
       mapInstance.addEventListener('rightclick', (e) => {
@@ -293,66 +287,114 @@ const Map = () => {
     });
   }, [map, customMarkers]);
 
-  // 搜索功能
-  const handleSearch = async (query) => {
-    if (!query.trim() || !map || !window.BMap) return;
+  // 高亮地图标记
+  const highlightMapMarker = (poiId) => {
+    // 清除之前的高亮
+    if (highlightedMarker) {
+      // 恢复原始图标
+      const originalIcon = new window.BMap.Icon(
+        'https://api.map.baidu.com/img/markers.png',
+        new window.BMap.Size(23, 25),
+        { offset: new window.BMap.Size(10, 25) }
+      );
+      highlightedMarker.setIcon(originalIcon);
+    }
 
-    setIsSearching(true);
-    setSearchResults([]);
-
-    try {
-      const localSearch = new window.BMap.LocalSearch(map, {
-        onSearchComplete: (results) => {
-          setIsSearching(false);
-          if (localSearch.getStatus() === window.BMAP_STATUS_SUCCESS) {
-            const searchResults = [];
-            for (let i = 0; i < results.getCurrentNumPois(); i++) {
-              const poi = results.getPoi(i);
-              searchResults.push({
-                title: poi.title,
-                address: poi.address,
-                point: poi.point,
-                type: poi.type
-              });
-            }
-            setSearchResults(searchResults);
-            setShowSearchResults(true);
-
-            // 保存搜索历史
-            const newHistory = [query, ...searchHistory.filter(item => item !== query)];
-            saveSearchHistory(newHistory);
-          } else {
-            setSearchResults([]);
-            setShowSearchResults(false);
-          }
+    // 找到对应的标记并高亮
+    const targetMarker = mapMarkers.find(marker => marker.poiData && marker.poiData.id === poiId);
+    if (targetMarker) {
+      // 创建高亮图标
+      const highlightIcon = new window.BMap.Icon(
+        'https://api.map.baidu.com/img/markers.png',
+        new window.BMap.Size(23, 25),
+        {
+          offset: new window.BMap.Size(10, 25),
+          imageOffset: new window.BMap.Size(0, -25) // 使用红色标记
         }
-      });
+      );
+      targetMarker.setIcon(highlightIcon);
+      setHighlightedMarker(targetMarker);
 
-      localSearch.search(query + ' 徐州');
-    } catch (error) {
-      console.error('Search error:', error);
-      setIsSearching(false);
+      // 添加动画效果
+      const point = targetMarker.getPosition();
+      map.centerAndZoom(point, 16);
+
+      // 创建跳动动画
+      setTimeout(() => {
+        if (targetMarker) {
+          const animation = new window.BMap.Animation(window.BMAP_ANIMATION_BOUNCE);
+          targetMarker.setAnimation(animation);
+          setTimeout(() => {
+            targetMarker.setAnimation(null);
+          }, 2000);
+        }
+      }, 500);
     }
   };
 
-  // 处理搜索结果点击
-  const handleSearchResultClick = (result) => {
-    if (map && result.point) {
-      map.centerAndZoom(result.point, 16);
+  // 处理搜索结果选择
+  const handleSearchResultSelect = (result) => {
+    setSelectedSearchResult(result);
 
-      // 创建搜索结果标记
-      const marker = new window.BMap.Marker(result.point);
+    if (map && result.location) {
+      const point = new window.BMap.Point(result.location.lng, result.location.lat);
+      map.centerAndZoom(point, 16);
+
+      // 如果是本地POI数据，高亮对应标记
+      const matchingPoi = pois.find(poi => poi.id === result.id);
+      if (matchingPoi) {
+        setSelectedPoi(matchingPoi);
+        highlightMapMarker(result.id);
+      } else {
+        // 如果是在线搜索结果，创建临时标记
+        const marker = new window.BMap.Marker(point);
+        const highlightIcon = new window.BMap.Icon(
+          'https://api.map.baidu.com/img/markers.png',
+          new window.BMap.Size(23, 25),
+          {
+            offset: new window.BMap.Size(10, 25),
+            imageOffset: new window.BMap.Size(0, -50) // 使用蓝色标记
+          }
+        );
+        marker.setIcon(highlightIcon);
+        map.addOverlay(marker);
+
+        // 清除之前的高亮标记
+        if (highlightedMarker && highlightedMarker !== marker) {
+          map.removeOverlay(highlightedMarker);
+        }
+        setHighlightedMarker(marker);
+      }
+
+      // 创建并显示信息窗口
       const infoWindow = new window.BMap.InfoWindow(`
         <div style="padding: 10px; min-width: 200px;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">🔍 ${result.title}</h4>
-          <p style="margin: 5px 0; color: #666;">${result.address}</p>
-          <p style="margin: 5px 0; color: #999;">类型: ${result.type || '未知'}</p>
+          <h4 style="margin: 0 0 10px 0; color: #333;">${result.icon} ${result.name}</h4>
+          <p style="margin: 5px 0; color: #666;">${result.description}</p>
+          <p style="margin: 5px 0; color: #999;">类型: ${result.type}</p>
+          ${result.rating ? `<p style="margin: 5px 0; color: #f39c12;">⭐ ${result.rating} 分</p>` : ''}
+          ${result.tips ? `<p style="margin: 5px 0; color: #2980b9; font-style: italic;">💡 ${result.tips}</p>` : ''}
         </div>
       `);
 
-      map.openInfoWindow(infoWindow, result.point);
-      setShowSearchResults(false);
-      setSearchQuery('');
+      map.openInfoWindow(infoWindow, point);
+    }
+  };
+
+  // 处理搜索分类变化
+  const handleSearchCategoryChange = (category) => {
+    // 根据搜索分类筛选POI显示
+    const categoryMap = {
+      'attraction': '景点',
+      'food': '美食',
+      'accommodation': '住宿',
+      'transportation': '交通'
+    };
+
+    if (category && categoryMap[category]) {
+      setSelectedType(categoryMap[category]);
+    } else {
+      setSelectedType('全部');
     }
   };
 
@@ -496,68 +538,16 @@ const Map = () => {
         <p>徐州旅游景点、美食、住宿一览</p>
       </div>
 
-      {/* 搜索框 */}
+      {/* 增强的搜索组件 */}
       <div className="map-search-container">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="搜索徐州的地点、景点、餐厅..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch(searchQuery);
-              }
-            }}
-            className="search-input"
-          />
-          <button
-            onClick={() => handleSearch(searchQuery)}
-            disabled={isSearching}
-            className="search-btn"
-          >
-            {isSearching ? '🔄' : '🔍'}
-          </button>
-        </div>
-
-        {/* 搜索结果下拉 */}
-        {showSearchResults && (
-          <div className="search-results">
-            {searchResults.length > 0 ? (
-              searchResults.map((result, index) => (
-                <div
-                  key={index}
-                  className="search-result-item"
-                  onClick={() => handleSearchResultClick(result)}
-                >
-                  <div className="result-title">📍 {result.title}</div>
-                  <div className="result-address">{result.address}</div>
-                </div>
-              ))
-            ) : (
-              <div className="no-results">未找到相关结果</div>
-            )}
-          </div>
-        )}
-
-        {/* 搜索历史 */}
-        {searchHistory.length > 0 && !showSearchResults && searchQuery === '' && (
-          <div className="search-history">
-            <div className="history-title">搜索历史</div>
-            {searchHistory.map((item, index) => (
-              <div
-                key={index}
-                className="history-item"
-                onClick={() => {
-                  setSearchQuery(item);
-                  handleSearch(item);
-                }}
-              >
-                🕐 {item}
-              </div>
-            ))}
-          </div>
-        )}
+        <SearchComponent
+          onResultSelect={handleSearchResultSelect}
+          onCategoryChange={handleSearchCategoryChange}
+          placeholder="搜索徐州的地点、景点、餐厅..."
+          showCategories={true}
+          showHistory={true}
+          className="map-search"
+        />
       </div>
 
       <div className="map-content">

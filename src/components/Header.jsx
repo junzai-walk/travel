@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import GlobalSearch from './GlobalSearch';
 import './Header.css';
 
 const Header = ({ activeSection, setActiveSection }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const menuItems = [
     { id: 'home', label: '首页', icon: '🏠' },
@@ -13,6 +15,17 @@ const Header = ({ activeSection, setActiveSection }) => {
     { id: 'map', label: '地图导览', icon: '🗺️' }
   ];
 
+  // 处理全局搜索结果选择
+  const handleGlobalSearchResult = (result, targetPage) => {
+    // 跳转到对应页面
+    setActiveSection(targetPage);
+    setIsMenuOpen(false);
+    setShowSearch(false);
+
+    // 可以在这里添加额外的逻辑，比如高亮显示搜索结果
+    console.log('Global search result selected:', result, 'Target page:', targetPage);
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -20,7 +33,15 @@ const Header = ({ activeSection, setActiveSection }) => {
           <h1>🎒 南京→徐州 周末游</h1>
           <p>轻松愉快的双人旅行攻略</p>
         </div>
-        
+
+        {/* 全局搜索 */}
+        <div className="header-search">
+          <GlobalSearch
+            onResultSelect={handleGlobalSearchResult}
+            setActiveSection={setActiveSection}
+          />
+        </div>
+
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
           {menuItems.map(item => (
             <button
