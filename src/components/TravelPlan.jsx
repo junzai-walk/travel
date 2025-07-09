@@ -28,6 +28,10 @@ const TravelPlan = () => {
   const [editingActualExpense, setEditingActualExpense] = useState(null);
   const [editingActualExpenseValue, setEditingActualExpenseValue] = useState('');
 
+  // 实际消费详细说明编辑相关状态
+  const [editingActualExpenseDetail, setEditingActualExpenseDetail] = useState(null);
+  const [editingActualExpenseDetailValue, setEditingActualExpenseDetailValue] = useState('');
+
   // 行程编辑相关状态
   const [editingActivity, setEditingActivity] = useState(null); // 格式: {dayIndex, actIndex, field}
   const [editingActivityValue, setEditingActivityValue] = useState('');
@@ -207,6 +211,16 @@ const TravelPlan = () => {
     }
   };
 
+  // 验证实际消费输入
+  const handleActualExpenseInputChange = (value) => {
+    // 只允许数字和小数点
+    const regex = /^\d*\.?\d{0,2}$/;
+    if (regex.test(value) || value === '') {
+      setEditingActualExpenseValue(value);
+      setErrorMessage('');
+    }
+  };
+
   // 开始编辑预算备注
   const startEditingBudgetDetail = (itemId, currentDetail) => {
     setEditingBudgetDetail(itemId);
@@ -302,6 +316,45 @@ const TravelPlan = () => {
       setActualExpenseData(getDefaultActualExpenseData());
       setShowSaveMessage(true);
       setTimeout(() => setShowSaveMessage(false), 2000);
+    }
+  };
+
+  // 开始编辑实际消费详细说明
+  const startEditingActualExpenseDetail = (itemId, currentDetail) => {
+    setEditingActualExpenseDetail(itemId);
+    setEditingActualExpenseDetailValue(currentDetail || '');
+  };
+
+  // 取消编辑实际消费详细说明
+  const cancelEditingActualExpenseDetail = () => {
+    setEditingActualExpenseDetail(null);
+    setEditingActualExpenseDetailValue('');
+  };
+
+  // 保存实际消费详细说明编辑
+  const saveActualExpenseDetailEdit = (itemId) => {
+    if (editingActualExpenseDetailValue.trim() === '') {
+      setErrorMessage('说明不能为空');
+      return;
+    }
+
+    // 更新数据
+    const newActualExpenseData = actualExpenseData.map(item =>
+      item.id === itemId ? { ...item, detail: editingActualExpenseDetailValue.trim() } : item
+    );
+
+    saveActualExpenseData(newActualExpenseData);
+    setEditingActualExpenseDetail(null);
+    setEditingActualExpenseDetailValue('');
+    setErrorMessage('');
+  };
+
+  // 处理实际消费详细说明编辑的键盘事件
+  const handleActualExpenseDetailKeyPress = (e, itemId) => {
+    if (e.key === 'Enter') {
+      saveActualExpenseDetailEdit(itemId);
+    } else if (e.key === 'Escape') {
+      cancelEditingActualExpenseDetail();
     }
   };
 
@@ -1424,7 +1477,7 @@ const TravelPlan = () => {
                                     <input
                                       type="text"
                                       value={editingActualExpenseValue}
-                                      onChange={(e) => handleInputChange(e.target.value)}
+                                      onChange={(e) => handleActualExpenseInputChange(e.target.value)}
                                       onKeyDown={(e) => handleActualExpenseKeyPress(e, item.id)}
                                       className="form-control"
                                       autoFocus
@@ -1460,7 +1513,45 @@ const TravelPlan = () => {
                                 </div>
                               )}
                             </div>
-                            <p className="card-text text-muted small">{item.detail}</p>
+                            {editingActualExpenseDetail === item.id ? (
+                              <div className="actual-expense-detail-edit-container">
+                                <input
+                                  type="text"
+                                  value={editingActualExpenseDetailValue}
+                                  onChange={(e) => setEditingActualExpenseDetailValue(e.target.value)}
+                                  onKeyDown={(e) => handleActualExpenseDetailKeyPress(e, item.id)}
+                                  className="form-control form-control-sm"
+                                  autoFocus
+                                  placeholder="输入消费详细说明..."
+                                />
+                                <div className="d-flex gap-2 mt-2">
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={() => saveActualExpenseDetailEdit(item.id)}
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={cancelEditingActualExpenseDetail}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                {errorMessage && (
+                                  <div className="text-danger small mt-1">{errorMessage}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <p
+                                className="card-text text-muted small editable-field"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => startEditingActualExpenseDetail(item.id, item.detail)}
+                                title="点击编辑说明"
+                              >
+                                {item.detail}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

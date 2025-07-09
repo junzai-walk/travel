@@ -225,6 +225,16 @@
   box-shadow: 0 0 0 0.2rem rgba(255,193,7,.25);
 }
 
+/* 实际消费详细说明编辑样式 */
+.actual-expense-detail-edit-container {
+  animation: fadeIn 0.3s ease;
+}
+
+.actual-expense-detail-edit-container .form-control {
+  border: 2px solid #ffc107;
+  box-shadow: 0 0 0 0.2rem rgba(255,193,7,.25);
+}
+
 /* 对比分析样式 */
 .comparison-item.card {
   transition: all 0.3s ease;
