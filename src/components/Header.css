@@ -64,6 +64,48 @@
   font-size: 1.2rem;
 }
 
+/* 中等屏幕优化 (1366×768等) */
+@media (max-width: 1400px) and (min-width: 992px) {
+  .header .nav-link {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem !important;
+    margin: 0 0.1rem !important;
+  }
+
+  .header .nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .header .nav-label {
+    white-space: nowrap;
+  }
+
+  .header .logo h1 {
+    font-size: 1.6rem;
+  }
+
+  .header .logo p {
+    font-size: 0.8rem;
+  }
+}
+
+/* 平板端响应式调整 */
+@media (max-width: 991px) and (min-width: 769px) {
+  .header .nav-link {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem !important;
+    margin: 0 0.05rem !important;
+  }
+
+  .header .nav-icon {
+    font-size: 1rem;
+  }
+
+  .header .logo h1 {
+    font-size: 1.4rem;
+  }
+}
+
 /* 移动端响应式调整 */
 @media (max-width: 768px) {
   .header .logo h1 {

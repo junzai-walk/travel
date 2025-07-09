@@ -8,11 +8,12 @@ const Header = ({ activeSection, setActiveSection }) => {
 
   const menuItems = [
     { id: 'home', label: '首页', icon: '🏠' },
+    { id: 'checklist', label: '出行清单', icon: '📋' },
     { id: 'plan', label: '行程安排', icon: '📅' },
     { id: 'transport', label: '交通指南', icon: '🚄' },
-    { id: 'food', label: '美食推荐', icon: '🍜' },
-    { id: 'accommodation', label: '住宿推荐', icon: '🏨' },
-    { id: 'map', label: '地图导览', icon: '🗺️' }
+    { id: 'food', label: '美食', icon: '🍜' },
+    { id: 'accommodation', label: '住宿', icon: '🏨' },
+    { id: 'map', label: '地图', icon: '🗺️' }
   ];
 
   // 处理全局搜索结果选择
@@ -33,7 +34,7 @@ const Header = ({ activeSection, setActiveSection }) => {
           {/* Logo */}
           <div className="navbar-brand logo">
             <h1 className="mb-0">🎒 南京→徐州 周末游</h1>
-            <p className="mb-0 d-none d-md-block">轻松愉快的双人旅行攻略</p>
+            <p className="mb-0 d-none d-md-block" style={{textAlign:'center'}}>轻松愉快的双人旅行攻略</p>
           </div>
 
           {/* 移动端菜单切换按钮 */}

@@ -30,10 +30,7 @@ const TravelPlan = () => {
   const [currentSelection, setCurrentSelection] = useState({ start: 0, end: 0 });
   const [isSelectionBold, setIsSelectionBold] = useState(false);
 
-  // 必备清单相关状态
-  const [checklistData, setChecklistData] = useState([]);
-  const [editingChecklistItem, setEditingChecklistItem] = useState(null);
-  const [newChecklistItem, setNewChecklistItem] = useState('');
+
 
   // 从localStorage加载数据
   useEffect(() => {
@@ -61,36 +58,10 @@ const TravelPlan = () => {
       setItineraryData(getDefaultItinerary());
     }
 
-    // 加载必备清单数据
-    const savedChecklist = localStorage.getItem('xuzhou-travel-checklist');
-    if (savedChecklist) {
-      try {
-        const parsedChecklist = JSON.parse(savedChecklist);
-        setChecklistData(parsedChecklist);
-      } catch (error) {
-        console.error('Error loading checklist data:', error);
-        setChecklistData(getDefaultChecklist());
-      }
-    } else {
-      setChecklistData(getDefaultChecklist());
-    }
+
   }, []);
 
-  // 获取默认必备清单数据
-  const getDefaultChecklist = () => [
-    { id: 1, item: '身份证', checked: false, category: '证件类' },
-    { id: 2, item: '手机充电器', checked: false, category: '电子设备' },
-    { id: 3, item: '换洗衣物', checked: false, category: '衣物类' },
-    { id: 4, item: '洗漱用品', checked: false, category: '生活用品' },
-    { id: 5, item: '现金和银行卡', checked: false, category: '财务类' },
-    { id: 6, item: '舒适的鞋子', checked: false, category: '衣物类' },
-    { id: 7, item: '雨伞', checked: false, category: '生活用品' },
-    { id: 8, item: '常用药品', checked: false, category: '医疗用品' },
-    { id: 9, item: '相机或拍照设备', checked: false, category: '电子设备' },
-    { id: 10, item: '零食和水', checked: false, category: '食物类' },
-    { id: 11, item: '防晒霜', checked: false, category: '护肤用品' },
-    { id: 12, item: '湿纸巾', checked: false, category: '生活用品' }
-  ];
+
 
   // 保存数据到localStorage
   const saveBudgetData = (newBudgetData) => {
@@ -239,60 +210,7 @@ const TravelPlan = () => {
     // 允许 Enter 键在 contentEditable 中正常换行
   };
 
-  // 保存必备清单数据到localStorage
-  const saveChecklistData = (newChecklistData) => {
-    localStorage.setItem('xuzhou-travel-checklist', JSON.stringify(newChecklistData));
-    setChecklistData(newChecklistData);
-  };
 
-  // 切换清单项目的勾选状态
-  const toggleChecklistItem = (itemId) => {
-    const newChecklistData = checklistData.map(item =>
-      item.id === itemId ? { ...item, checked: !item.checked } : item
-    );
-    saveChecklistData(newChecklistData);
-  };
-
-  // 添加新的清单项目
-  const addChecklistItem = () => {
-    if (newChecklistItem.trim() === '') return;
-
-    const newItem = {
-      id: Date.now(),
-      item: newChecklistItem.trim(),
-      checked: false,
-      category: '自定义'
-    };
-
-    const newChecklistData = [...checklistData, newItem];
-    saveChecklistData(newChecklistData);
-    setNewChecklistItem('');
-  };
-
-  // 删除清单项目
-  const deleteChecklistItem = (itemId) => {
-    const newChecklistData = checklistData.filter(item => item.id !== itemId);
-    saveChecklistData(newChecklistData);
-  };
-
-  // 编辑清单项目
-  const editChecklistItem = (itemId, newText) => {
-    const newChecklistData = checklistData.map(item =>
-      item.id === itemId ? { ...item, item: newText } : item
-    );
-    saveChecklistData(newChecklistData);
-    setEditingChecklistItem(null);
-  };
-
-  // 重置必备清单为默认数据
-  const resetChecklistToDefault = () => {
-    if (window.confirm('确定要重置为默认清单吗？这将清除您的所有自定义修改。')) {
-      localStorage.removeItem('xuzhou-travel-checklist');
-      setChecklistData(getDefaultChecklist());
-      setShowSaveMessage(true);
-      setTimeout(() => setShowSaveMessage(false), 2000);
-    }
-  };
 
   // 获取contentEditable元素的HTML内容
   const getEditableContent = () => {
@@ -961,137 +879,7 @@ const TravelPlan = () => {
           </div>
         </div>
 
-        {/* 出游必备清单 */}
-        <div className="checklist-section mt-5">
-          <div className="row">
-            <div className="col-12">
-              <div className="card border-0 shadow-sm">
-                <div className="card-header bg-success text-white">
-                  <div className="row align-items-center">
-                    <div className="col-md-6">
-                      <h3 className="h5 mb-0">📋 出游必备清单</h3>
-                    </div>
-                    <div className="col-md-6 text-md-end">
-                      <small className="me-3">💡 勾选已准备的物品</small>
-                      <button className="btn btn-outline-light btn-sm" onClick={resetChecklistToDefault}>
-                        重置为默认清单
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
-                {showSaveMessage && (
-                  <div className="alert alert-success mb-0">
-                    ✅ 清单已保存到本地
-                  </div>
-                )}
-
-                <div className="card-body">
-                  {/* 添加新项目 */}
-                  <div className="add-item-section mb-4">
-                    <div className="row">
-                      <div className="col-md-8" style={{marginBottom: '0.5rem'}}>
-                        <input
-                          type="text"
-                          value={newChecklistItem}
-                          onChange={(e) => setNewChecklistItem(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addChecklistItem()}
-                          className="form-control"
-                          placeholder="添加新的必备物品..."
-                        />
-                      </div>
-                      <div className="col-md-4">
-                        <button
-                          className="btn btn-primary w-100"
-                          onClick={addChecklistItem}
-                          disabled={!newChecklistItem.trim()}
-                        >
-                          ➕ 添加物品
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 清单项目 */}
-                  <div className="row g-3">
-                    {checklistData.map((item) => (
-                      <div key={item.id} className="col-lg-4 col-md-6">
-                        <div className={`checklist-item card h-100 ${item.checked ? 'checked' : ''}`}>
-                          <div className="card-body d-flex align-items-center">
-                            <div className="form-check me-3">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={item.checked}
-                                onChange={() => toggleChecklistItem(item.id)}
-                                id={`checklist-${item.id}`}
-                              />
-                            </div>
-                            <div className="flex-grow-1">
-                              {editingChecklistItem === item.id ? (
-                                <div className="edit-item-container">
-                                  <input
-                                    type="text"
-                                    defaultValue={item.item}
-                                    onBlur={(e) => editChecklistItem(item.id, e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        editChecklistItem(item.id, e.target.value);
-                                      }
-                                    }}
-                                    className="form-control form-control-sm"
-                                    autoFocus
-                                  />
-                                </div>
-                              ) : (
-                                <div
-                                  className={`item-text ${item.checked ? 'text-decoration-line-through text-muted' : ''}`}
-                                  onClick={() => setEditingChecklistItem(item.id)}
-                                  style={{cursor: 'pointer'}}
-                                  title="点击编辑"
-                                >
-                                  {item.item}
-                                </div>
-                              )}
-                              <small className="text-muted">{item.category}</small>
-                            </div>
-                            <button
-                              className="btn btn-outline-danger btn-sm ms-2"
-                              onClick={() => deleteChecklistItem(item.id)}
-                              title="删除项目"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 统计信息 */}
-                  <div className="checklist-stats mt-4 p-3 bg-light rounded">
-                    <div className="row text-center">
-                      <div className="col-md-4">
-                        <h6 className="mb-1">总计物品</h6>
-                        <span className="h5 text-primary">{checklistData.length}</span>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="mb-1">已准备</h6>
-                        <span className="h5 text-success">{checklistData.filter(item => item.checked).length}</span>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="mb-1">完成度</h6>
-                        <span className="h5 text-info">
-                          {checklistData.length > 0 ? Math.round((checklistData.filter(item => item.checked).length / checklistData.length) * 100) : 0}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 行程建议 */}
         <div className="plan-tips mt-5">

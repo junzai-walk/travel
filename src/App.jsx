@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Header from './components/Header'
 import Home from './components/Home'
+import Checklist from './components/Checklist'
 import TravelPlan from './components/TravelPlan'
 import Transportation from './components/Transportation'
 import Food from './components/Food'
@@ -49,6 +50,8 @@ function App() {
     switch (activeSection) {
       case 'home':
         return <Home setActiveSection={setActiveSection} />
+      case 'checklist':
+        return <Checklist />
       case 'plan':
         return <TravelPlan />
       case 'transport':
