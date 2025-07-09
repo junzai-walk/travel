@@ -19,10 +19,23 @@ const TravelPlan = () => {
   const [showSaveMessage, setShowSaveMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // 预算备注编辑相关状态
+  const [editingBudgetDetail, setEditingBudgetDetail] = useState(null);
+  const [editingBudgetDetailValue, setEditingBudgetDetailValue] = useState('');
+
+  // 实际消费支出相关状态
+  const [actualExpenseData, setActualExpenseData] = useState([]);
+  const [editingActualExpense, setEditingActualExpense] = useState(null);
+  const [editingActualExpenseValue, setEditingActualExpenseValue] = useState('');
+
   // 行程编辑相关状态
   const [editingActivity, setEditingActivity] = useState(null); // 格式: {dayIndex, actIndex, field}
   const [editingActivityValue, setEditingActivityValue] = useState('');
   const [itineraryData, setItineraryData] = useState([]);
+
+  // 标题编辑相关状态
+  const [editingTitle, setEditingTitle] = useState(null); // 格式: {dayIndex, field} field可以是'day', 'date', 'title'
+  const [editingTitleValue, setEditingTitleValue] = useState('');
 
   // 富文本编辑相关状态
   const [selectedText, setSelectedText] = useState('');
@@ -58,15 +71,47 @@ const TravelPlan = () => {
       setItineraryData(getDefaultItinerary());
     }
 
+    // 加载实际消费数据
+    const savedActualExpense = localStorage.getItem('xuzhou-travel-actual-expense');
+    if (savedActualExpense) {
+      try {
+        const parsedActualExpense = JSON.parse(savedActualExpense);
+        setActualExpenseData(parsedActualExpense);
+      } catch (error) {
+        console.error('Error loading actual expense data:', error);
+        setActualExpenseData(getDefaultActualExpenseData());
+      }
+    } else {
+      setActualExpenseData(getDefaultActualExpenseData());
+    }
+
 
   }, []);
 
 
 
+  // 获取默认实际消费数据
+  const getDefaultActualExpenseData = () => [
+    { id: 'transport', category: '交通费', amount: 0, detail: '实际交通支出' },
+    { id: 'accommodation', category: '住宿费', amount: 0, detail: '实际住宿支出' },
+    { id: 'food', category: '餐饮费', amount: 0, detail: '实际餐饮支出' },
+    { id: 'tickets', category: '门票费', amount: 0, detail: '实际门票支出' },
+    { id: 'localTransport', category: '市内交通', amount: 0, detail: '实际市内交通支出' },
+    { id: 'shopping', category: '购物费', amount: 0, detail: '实际购物支出' }
+  ];
+
   // 保存数据到localStorage
   const saveBudgetData = (newBudgetData) => {
     localStorage.setItem('xuzhou-travel-budget', JSON.stringify(newBudgetData));
     setBudgetData(newBudgetData);
+    setShowSaveMessage(true);
+    setTimeout(() => setShowSaveMessage(false), 2000);
+  };
+
+  // 保存实际消费数据到localStorage
+  const saveActualExpenseData = (newActualExpenseData) => {
+    localStorage.setItem('xuzhou-travel-actual-expense', JSON.stringify(newActualExpenseData));
+    setActualExpenseData(newActualExpenseData);
     setShowSaveMessage(true);
     setTimeout(() => setShowSaveMessage(false), 2000);
   };
@@ -123,6 +168,25 @@ const TravelPlan = () => {
 
   // 计算总计
   const totalAmount = budgetData.reduce((sum, item) => sum + item.amount, 0);
+  const totalActualAmount = actualExpenseData.reduce((sum, item) => sum + item.amount, 0);
+  const totalDifference = totalActualAmount - totalAmount;
+
+  // 获取对比数据
+  const getComparisonData = () => {
+    return budgetData.map(budgetItem => {
+      const actualItem = actualExpenseData.find(actual => actual.id === budgetItem.id);
+      const actualAmount = actualItem ? actualItem.amount : 0;
+      const difference = actualAmount - budgetItem.amount;
+      const percentage = budgetItem.amount > 0 ? ((difference / budgetItem.amount) * 100) : 0;
+
+      return {
+        ...budgetItem,
+        actualAmount,
+        difference,
+        percentage: Math.round(percentage * 100) / 100
+      };
+    });
+  };
 
   // 处理键盘事件
   const handleKeyPress = (e, itemId) => {
@@ -140,6 +204,104 @@ const TravelPlan = () => {
     if (regex.test(value) || value === '') {
       setEditValue(value);
       setErrorMessage('');
+    }
+  };
+
+  // 开始编辑预算备注
+  const startEditingBudgetDetail = (itemId, currentDetail) => {
+    setEditingBudgetDetail(itemId);
+    setEditingBudgetDetailValue(currentDetail || '');
+  };
+
+  // 取消编辑预算备注
+  const cancelEditingBudgetDetail = () => {
+    setEditingBudgetDetail(null);
+    setEditingBudgetDetailValue('');
+  };
+
+  // 保存预算备注编辑
+  const saveBudgetDetailEdit = (itemId) => {
+    if (editingBudgetDetailValue.trim() === '') {
+      setErrorMessage('备注不能为空');
+      return;
+    }
+
+    // 更新数据
+    const newBudgetData = budgetData.map(item =>
+      item.id === itemId ? { ...item, detail: editingBudgetDetailValue.trim() } : item
+    );
+
+    saveBudgetData(newBudgetData);
+    setEditingBudgetDetail(null);
+    setEditingBudgetDetailValue('');
+    setErrorMessage('');
+  };
+
+  // 处理预算备注编辑的键盘事件
+  const handleBudgetDetailKeyPress = (e, itemId) => {
+    if (e.key === 'Enter') {
+      saveBudgetDetailEdit(itemId);
+    } else if (e.key === 'Escape') {
+      cancelEditingBudgetDetail();
+    }
+  };
+
+  // 开始编辑实际消费
+  const startEditingActualExpense = (item) => {
+    setEditingActualExpense(item.id);
+    setEditingActualExpenseValue(item.amount.toString());
+    setErrorMessage('');
+  };
+
+  // 取消编辑实际消费
+  const cancelEditingActualExpense = () => {
+    setEditingActualExpense(null);
+    setEditingActualExpenseValue('');
+    setErrorMessage('');
+  };
+
+  // 保存实际消费编辑
+  const saveActualExpenseEdit = (itemId) => {
+    const numValue = parseFloat(editingActualExpenseValue);
+
+    // 验证输入
+    if (isNaN(numValue) || numValue < 0) {
+      setErrorMessage('请输入有效的正数');
+      return;
+    }
+
+    if (numValue > 99999) {
+      setErrorMessage('金额不能超过99999');
+      return;
+    }
+
+    // 更新数据
+    const newActualExpenseData = actualExpenseData.map(item =>
+      item.id === itemId ? { ...item, amount: numValue } : item
+    );
+
+    saveActualExpenseData(newActualExpenseData);
+    setEditingActualExpense(null);
+    setEditingActualExpenseValue('');
+    setErrorMessage('');
+  };
+
+  // 处理实际消费编辑的键盘事件
+  const handleActualExpenseKeyPress = (e, itemId) => {
+    if (e.key === 'Enter') {
+      saveActualExpenseEdit(itemId);
+    } else if (e.key === 'Escape') {
+      cancelEditingActualExpense();
+    }
+  };
+
+  // 重置实际消费为默认数据
+  const resetActualExpenseToDefault = () => {
+    if (window.confirm('确定要重置实际消费数据吗？这将清除您的所有记录。')) {
+      localStorage.removeItem('xuzhou-travel-actual-expense');
+      setActualExpenseData(getDefaultActualExpenseData());
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 2000);
     }
   };
 
@@ -210,6 +372,59 @@ const TravelPlan = () => {
     // 允许 Enter 键在 contentEditable 中正常换行
   };
 
+  // 开始编辑标题
+  const startEditingTitle = (dayIndex, field, currentValue) => {
+    setEditingTitle({ dayIndex, field, originalHtml: currentValue });
+    setEditingTitleValue(currentValue || '');
+
+    // 重置选择状态
+    setIsSelectionBold(false);
+    setCurrentSelection({ start: 0, end: 0 });
+
+    // 对于富文本字段，需要在下一个渲染周期设置HTML内容
+    setTimeout(() => {
+      setEditableTitleContent(currentValue || '');
+    }, 10);
+  };
+
+  // 取消编辑标题
+  const cancelEditingTitle = () => {
+    setEditingTitle(null);
+    setEditingTitleValue('');
+  };
+
+  // 保存标题编辑
+  const saveTitleEdit = () => {
+    if (!editingTitle) return;
+
+    const { dayIndex, field } = editingTitle;
+    const newItineraryData = [...itineraryData];
+
+    // 从contentEditable元素获取HTML内容
+    let valueToSave = getEditableTitleContent() || editingTitleValue;
+
+    // 更新对应字段的值
+    newItineraryData[dayIndex][field] = valueToSave;
+
+    saveItineraryData(newItineraryData);
+    setEditingTitle(null);
+    setEditingTitleValue('');
+    setIsSelectionBold(false);
+    setCurrentSelection({ start: 0, end: 0 });
+  };
+
+  // 处理标题编辑的键盘事件
+  const handleTitleKeyPress = (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      // Ctrl+Enter 保存
+      e.preventDefault();
+      saveTitleEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditingTitle();
+    }
+  };
+
 
 
   // 获取contentEditable元素的HTML内容
@@ -232,6 +447,20 @@ const TravelPlan = () => {
     return editableDiv ? (editableDiv.textContent || editableDiv.innerText || '') : '';
   };
 
+  // 获取标题编辑器的HTML内容
+  const getEditableTitleContent = () => {
+    const editableDiv = document.querySelector('.wysiwyg-title-editor');
+    return editableDiv ? editableDiv.innerHTML : '';
+  };
+
+  // 设置标题编辑器的HTML内容
+  const setEditableTitleContent = (html) => {
+    const editableDiv = document.querySelector('.wysiwyg-title-editor');
+    if (editableDiv) {
+      editableDiv.innerHTML = html || '';
+    }
+  };
+
   // 检查当前选中内容是否已加粗
   const checkIfSelectionIsBold = () => {
     const selection = window.getSelection();
@@ -243,7 +472,9 @@ const TravelPlan = () => {
     // 检查选中内容或其父元素是否包含strong标签
     let element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
 
-    while (element && element.classList && !element.classList.contains('wysiwyg-editor')) {
+    while (element && element.classList &&
+           !element.classList.contains('wysiwyg-editor') &&
+           !element.classList.contains('wysiwyg-title-editor')) {
       if (element.tagName === 'STRONG') {
         return true;
       }
@@ -265,8 +496,13 @@ const TravelPlan = () => {
     setIsSelectionBold(isBold);
 
     // 更新编辑值为当前HTML内容
-    const currentHtml = getEditableContent();
-    setEditingActivityValue(currentHtml);
+    if (editingTitle) {
+      const currentHtml = getEditableTitleContent();
+      setEditingTitleValue(currentHtml);
+    } else {
+      const currentHtml = getEditableContent();
+      setEditingActivityValue(currentHtml);
+    }
   };
 
   // 富文本编辑相关函数
@@ -290,8 +526,13 @@ const TravelPlan = () => {
     }
 
     // 更新编辑值
-    const newHtml = getEditableContent();
-    setEditingActivityValue(newHtml);
+    if (editingTitle) {
+      const newHtml = getEditableTitleContent();
+      setEditingTitleValue(newHtml);
+    } else {
+      const newHtml = getEditableContent();
+      setEditingActivityValue(newHtml);
+    }
 
     // 更新选择状态
     setTimeout(() => {
@@ -500,12 +741,238 @@ const TravelPlan = () => {
                       <div className="row align-items-center">
                         <div className="col-md-6">
                           <div className="day-info d-flex align-items-center">
-                            <h3 className="h4 mb-0 me-3">{day.day}</h3>
-                            <span className="badge bg-primary">{day.date}</span>
+                            {editingTitle &&
+                             editingTitle.dayIndex === dayIndex &&
+                             editingTitle.field === 'day' ? (
+                              <div className="title-edit-container me-3">
+                                <div
+                                  contentEditable
+                                  onInput={(e) => {
+                                    const html = e.target.innerHTML;
+                                    setEditingTitleValue(html);
+                                  }}
+                                  onKeyDown={handleTitleKeyPress}
+                                  onMouseUp={handleTextSelection}
+                                  onKeyUp={handleTextSelection}
+                                  onSelect={handleTextSelection}
+                                  className="form-control wysiwyg-title-editor h4 mb-0"
+                                  style={{
+                                    minHeight: '40px',
+                                    padding: '8px 12px',
+                                    border: '2px solid #007bff',
+                                    borderRadius: '0.375rem',
+                                    outline: 'none',
+                                    display: 'inline-block',
+                                    minWidth: '120px'
+                                  }}
+                                  suppressContentEditableWarning={true}
+                                  data-placeholder="日期（所见即所得编辑）"
+                                />
+                                {/* 富文本编辑工具栏 */}
+                                <div className="format-toolbar mb-2 p-2 bg-light rounded mt-2">
+                                  <div className="d-flex gap-2 align-items-center">
+                                    <button
+                                      type="button"
+                                      className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                      onClick={() => applyTextFormat('bold')}
+                                      title={isSelectionBold ? "取消加粗" : "加粗"}
+                                    >
+                                      <strong>B</strong>
+                                    </button>
+                                    <div className="color-picker d-flex gap-1">
+                                      {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                        <button
+                                          key={color}
+                                          type="button"
+                                          className="btn btn-sm color-btn"
+                                          style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
+                                          onClick={() => applyTextFormat('color', color)}
+                                          title={`设置颜色为 ${color}`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="d-flex gap-2 mt-2">
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={saveTitleEdit}
+                                  >
+                                    ✓ 保存
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={cancelEditingTitle}
+                                  >
+                                    ✕ 取消
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <h3
+                                className="h4 mb-0 me-3 editable-field"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => startEditingTitle(dayIndex, 'day', day.day)}
+                                title="点击编辑日期"
+                                dangerouslySetInnerHTML={renderHTMLContent(day.day)}
+                              />
+                            )}
+
+                            {editingTitle &&
+                             editingTitle.dayIndex === dayIndex &&
+                             editingTitle.field === 'date' ? (
+                              <div className="title-edit-container">
+                                <div
+                                  contentEditable
+                                  onInput={(e) => {
+                                    const html = e.target.innerHTML;
+                                    setEditingTitleValue(html);
+                                  }}
+                                  onKeyDown={handleTitleKeyPress}
+                                  onMouseUp={handleTextSelection}
+                                  onKeyUp={handleTextSelection}
+                                  onSelect={handleTextSelection}
+                                  className="form-control wysiwyg-title-editor badge bg-primary"
+                                  style={{
+                                    minHeight: '30px',
+                                    padding: '8px 12px',
+                                    border: '2px solid #007bff',
+                                    borderRadius: '0.375rem',
+                                    outline: 'none',
+                                    display: 'inline-block',
+                                    minWidth: '100px',
+                                    color: 'white'
+                                  }}
+                                  suppressContentEditableWarning={true}
+                                  data-placeholder="日期标签（所见即所得编辑）"
+                                />
+                                {/* 富文本编辑工具栏 */}
+                                <div className="format-toolbar mb-2 p-2 bg-light rounded mt-2">
+                                  <div className="d-flex gap-2 align-items-center">
+                                    <button
+                                      type="button"
+                                      className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                      onClick={() => applyTextFormat('bold')}
+                                      title={isSelectionBold ? "取消加粗" : "加粗"}
+                                    >
+                                      <strong>B</strong>
+                                    </button>
+                                    <div className="color-picker d-flex gap-1">
+                                      {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                        <button
+                                          key={color}
+                                          type="button"
+                                          className="btn btn-sm color-btn"
+                                          style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
+                                          onClick={() => applyTextFormat('color', color)}
+                                          title={`设置颜色为 ${color}`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="d-flex gap-2 mt-2">
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={saveTitleEdit}
+                                  >
+                                    ✓ 保存
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={cancelEditingTitle}
+                                  >
+                                    ✕ 取消
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <span
+                                className="badge bg-primary editable-field"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => startEditingTitle(dayIndex, 'date', day.date)}
+                                title="点击编辑日期标签"
+                                dangerouslySetInnerHTML={renderHTMLContent(day.date)}
+                              />
+                            )}
                           </div>
                         </div>
                         <div className="col-md-6">
-                          <h4 className="h5 mb-0 text-md-end mt-2 mt-md-0">{day.title}</h4>
+                          {editingTitle &&
+                           editingTitle.dayIndex === dayIndex &&
+                           editingTitle.field === 'title' ? (
+                            <div className="title-edit-container">
+                              <div
+                                contentEditable
+                                onInput={(e) => {
+                                  const html = e.target.innerHTML;
+                                  setEditingTitleValue(html);
+                                }}
+                                onKeyDown={handleTitleKeyPress}
+                                onMouseUp={handleTextSelection}
+                                onKeyUp={handleTextSelection}
+                                onSelect={handleTextSelection}
+                                className="form-control wysiwyg-title-editor h5 mb-0"
+                                style={{
+                                  minHeight: '40px',
+                                  padding: '8px 12px',
+                                  border: '2px solid #007bff',
+                                  borderRadius: '0.375rem',
+                                  outline: 'none',
+                                  textAlign: 'right'
+                                }}
+                                suppressContentEditableWarning={true}
+                                data-placeholder="行程标题（所见即所得编辑）"
+                              />
+                              {/* 富文本编辑工具栏 */}
+                              <div className="format-toolbar mb-2 p-2 bg-light rounded mt-2">
+                                <div className="d-flex gap-2 align-items-center">
+                                  <button
+                                    type="button"
+                                    className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                    onClick={() => applyTextFormat('bold')}
+                                    title={isSelectionBold ? "取消加粗" : "加粗"}
+                                  >
+                                    <strong>B</strong>
+                                  </button>
+                                  <div className="color-picker d-flex gap-1">
+                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        className="btn btn-sm color-btn"
+                                        style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
+                                        onClick={() => applyTextFormat('color', color)}
+                                        title={`设置颜色为 ${color}`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="d-flex gap-2 mt-2">
+                                <button
+                                  className="btn btn-success btn-sm"
+                                  onClick={saveTitleEdit}
+                                >
+                                  ✓ 保存
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={cancelEditingTitle}
+                                >
+                                  ✕ 取消
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <h4
+                              className="h5 mb-0 text-md-end mt-2 mt-md-0 editable-field"
+                              style={{cursor: 'pointer'}}
+                              onClick={() => startEditingTitle(dayIndex, 'title', day.title)}
+                              title="点击编辑行程标题"
+                              dangerouslySetInnerHTML={renderHTMLContent(day.title)}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -848,7 +1315,45 @@ const TravelPlan = () => {
                                 </div>
                               )}
                             </div>
-                            <p className="card-text text-muted small">{item.detail}</p>
+                            {editingBudgetDetail === item.id ? (
+                              <div className="budget-detail-edit-container">
+                                <input
+                                  type="text"
+                                  value={editingBudgetDetailValue}
+                                  onChange={(e) => setEditingBudgetDetailValue(e.target.value)}
+                                  onKeyDown={(e) => handleBudgetDetailKeyPress(e, item.id)}
+                                  className="form-control form-control-sm"
+                                  autoFocus
+                                  placeholder="输入预算详细说明..."
+                                />
+                                <div className="d-flex gap-2 mt-2">
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={() => saveBudgetDetailEdit(item.id)}
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={cancelEditingBudgetDetail}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                {errorMessage && (
+                                  <div className="text-danger small mt-1">{errorMessage}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <p
+                                className="card-text text-muted small editable-field"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => startEditingBudgetDetail(item.id, item.detail)}
+                                title="点击编辑备注"
+                              >
+                                {item.detail}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -879,7 +1384,219 @@ const TravelPlan = () => {
           </div>
         </div>
 
+        {/* 实际消费支出模块 */}
+        <div className="actual-expense-section mt-5">
+          <div className="row">
+            <div className="col-12">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-warning text-dark">
+                  <div className="row align-items-center">
+                    <div className="col-md-6">
+                      <h3 className="h5 mb-0">💳 实际消费支出</h3>
+                    </div>
+                    <div className="col-md-6 text-md-end">
+                      <small className="me-3">💡 点击金额记录实际花费</small>
+                      <button className="btn btn-outline-dark btn-sm" onClick={resetActualExpenseToDefault}>
+                        重置消费记录
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
+                {showSaveMessage && (
+                  <div className="alert alert-success mb-0">
+                    ✅ 消费记录已保存到本地
+                  </div>
+                )}
+
+                <div className="card-body">
+                  <div className="row g-3">
+                    {actualExpenseData.map((item) => (
+                      <div key={item.id} className="col-lg-4 col-md-6">
+                        <div className="actual-expense-item card h-100">
+                          <div className="card-body">
+                            <h6 className="card-title">{item.category}</h6>
+                            <div className="expense-amount-container">
+                              {editingActualExpense === item.id ? (
+                                <div className="expense-edit-container">
+                                  <div className="input-group mb-2">
+                                    <span className="input-group-text">¥</span>
+                                    <input
+                                      type="text"
+                                      value={editingActualExpenseValue}
+                                      onChange={(e) => handleInputChange(e.target.value)}
+                                      onKeyDown={(e) => handleActualExpenseKeyPress(e, item.id)}
+                                      className="form-control"
+                                      autoFocus
+                                      placeholder="输入实际金额"
+                                    />
+                                  </div>
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-success btn-sm"
+                                      onClick={() => saveActualExpenseEdit(item.id)}
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      className="btn btn-secondary btn-sm"
+                                      onClick={cancelEditingActualExpense}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                  {errorMessage && (
+                                    <div className="text-danger small mt-1">{errorMessage}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div
+                                  className="expense-amount h4 text-warning cursor-pointer"
+                                  onClick={() => startEditingActualExpense(item)}
+                                  title="点击编辑实际金额"
+                                  style={{cursor: 'pointer'}}
+                                >
+                                  ¥{item.amount}
+                                </div>
+                              )}
+                            </div>
+                            <p className="card-text text-muted small">{item.detail}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 实际消费总计行 */}
+                    <div className="col-12">
+                      <div className="card bg-warning bg-opacity-25">
+                        <div className="card-body">
+                          <div className="row align-items-center">
+                            <div className="col-md-4">
+                              <h5 className="mb-0">实际总计</h5>
+                            </div>
+                            <div className="col-md-4">
+                              <h4 className="text-warning mb-0">¥{totalActualAmount}</h4>
+                            </div>
+                            <div className="col-md-4">
+                              <p className="text-muted mb-0">
+                                差异: <span className={totalDifference >= 0 ? 'text-danger' : 'text-success'}>
+                                  {totalDifference >= 0 ? '+' : ''}¥{totalDifference}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 预算vs实际对比分析 */}
+        <div className="comparison-analysis-section mt-5">
+          <div className="row">
+            <div className="col-12">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-info text-white">
+                  <h3 className="h5 mb-0">📊 预算vs实际对比分析</h3>
+                </div>
+                <div className="card-body">
+                  <div className="row g-3">
+                    {getComparisonData().map((item) => (
+                      <div key={item.id} className="col-lg-6 col-md-12">
+                        <div className="comparison-item card h-100">
+                          <div className="card-body">
+                            <h6 className="card-title">{item.category}</h6>
+                            <div className="comparison-bars mb-3">
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="small text-muted">预算</span>
+                                <span className="fw-bold text-primary">¥{item.amount}</span>
+                              </div>
+                              <div className="progress mb-2" style={{height: '20px'}}>
+                                <div
+                                  className="progress-bar bg-primary"
+                                  style={{width: '100%'}}
+                                >
+                                  预算 ¥{item.amount}
+                                </div>
+                              </div>
+
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="small text-muted">实际</span>
+                                <span className="fw-bold text-warning">¥{item.actualAmount}</span>
+                              </div>
+                              <div className="progress mb-2" style={{height: '20px'}}>
+                                <div
+                                  className="progress-bar bg-warning"
+                                  style={{width: item.amount > 0 ? `${Math.min((item.actualAmount / item.amount) * 100, 200)}%` : '0%'}}
+                                >
+                                  实际 ¥{item.actualAmount}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="comparison-summary">
+                              <div className="d-flex justify-content-between">
+                                <span>差异:</span>
+                                <span className={item.difference >= 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
+                                  {item.difference >= 0 ? '+' : ''}¥{item.difference}
+                                </span>
+                              </div>
+                              <div className="d-flex justify-content-between">
+                                <span>比例:</span>
+                                <span className={item.percentage >= 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
+                                  {item.percentage >= 0 ? '+' : ''}{item.percentage}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 总体分析 */}
+                  <div className="overall-analysis mt-4 p-3 bg-light rounded">
+                    <h6 className="mb-3">📈 总体分析</h6>
+                    <div className="row text-center">
+                      <div className="col-md-3">
+                        <div className="analysis-item">
+                          <h5 className="text-primary mb-1">¥{totalAmount}</h5>
+                          <small className="text-muted">预算总额</small>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="analysis-item">
+                          <h5 className="text-warning mb-1">¥{totalActualAmount}</h5>
+                          <small className="text-muted">实际总额</small>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="analysis-item">
+                          <h5 className={totalDifference >= 0 ? 'text-danger mb-1' : 'text-success mb-1'}>
+                            {totalDifference >= 0 ? '+' : ''}¥{totalDifference}
+                          </h5>
+                          <small className="text-muted">总差异</small>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="analysis-item">
+                          <h5 className={totalAmount > 0 && ((totalDifference / totalAmount) * 100) >= 0 ? 'text-danger mb-1' : 'text-success mb-1'}>
+                            {totalAmount > 0 ? `${totalDifference >= 0 ? '+' : ''}${Math.round(((totalDifference / totalAmount) * 100) * 100) / 100}%` : '0%'}
+                          </h5>
+                          <small className="text-muted">总比例</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* 行程建议 */}
         <div className="plan-tips mt-5">

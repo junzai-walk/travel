@@ -65,6 +65,24 @@
   text-align: center;
 }
 
+/* 时间标签样式优化 */
+.time-marker .time.badge {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 0.6rem 1rem !important;
+  min-width: 80px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.time-marker .time.badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}
+
 /* 编辑容器样式 */
 .activity-edit-container,
 .description-edit-container,
@@ -157,26 +175,125 @@
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
+/* 标题编辑器样式 */
+.wysiwyg-title-editor {
+  font-family: inherit;
+  line-height: 1.4;
+  overflow-y: auto;
+  word-wrap: break-word;
+  background: transparent;
+}
+
+.wysiwyg-title-editor:focus {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.title-edit-container {
+  animation: fadeIn 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+/* 预算备注编辑样式 */
+.budget-detail-edit-container {
+  animation: fadeIn 0.3s ease;
+}
+
+.budget-detail-edit-container .form-control {
+  border: 2px solid #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* 实际消费支出样式 */
+.actual-expense-item.card {
+  transition: all 0.3s ease;
+  border: 1px solid #ffc107;
+}
+
+.actual-expense-item.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255,193,7,0.3);
+}
+
+.expense-edit-container {
+  animation: fadeIn 0.3s ease;
+}
+
+.expense-edit-container .form-control {
+  border: 2px solid #ffc107;
+  box-shadow: 0 0 0 0.2rem rgba(255,193,7,.25);
+}
+
+/* 对比分析样式 */
+.comparison-item.card {
+  transition: all 0.3s ease;
+  border: 1px solid #0dcaf0;
+}
+
+.comparison-item.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13,202,240,0.3);
+}
+
+.comparison-bars .progress {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.comparison-bars .progress-bar {
+  transition: width 0.6s ease;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.comparison-summary {
+  border-top: 1px solid #dee2e6;
+  padding-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.analysis-item {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: white;
+  margin: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 卡片头部样式优化 */
+.card-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%) !important;
+}
+
+.card-header.bg-info {
+  background: linear-gradient(135deg, #0dcaf0 0%, #31d2f2 100%) !important;
+}
+
 /* 占位符样式 */
-.wysiwyg-editor:empty:before {
+.wysiwyg-editor:empty:before,
+.wysiwyg-title-editor:empty:before {
   content: attr(data-placeholder);
   color: #6c757d;
   font-style: italic;
   pointer-events: none;
 }
 
-.wysiwyg-editor:focus:empty:before {
+.wysiwyg-editor:focus:empty:before,
+.wysiwyg-title-editor:focus:empty:before {
   content: attr(data-placeholder);
   color: #adb5bd;
 }
 
 /* 确保加粗文字在编辑器中正确显示 */
-.wysiwyg-editor strong {
+.wysiwyg-editor strong,
+.wysiwyg-title-editor strong {
   font-weight: bold;
 }
 
 /* 确保颜色文字在编辑器中正确显示 */
-.wysiwyg-editor span[style*="color"] {
+.wysiwyg-editor span[style*="color"],
+.wysiwyg-title-editor span[style*="color"] {
   /* 保持原有颜色样式 */
 }
 
@@ -261,6 +378,50 @@
 
   .checklist-item {
     margin-bottom: 0.5rem;
+  }
+
+  /* 移动端实际消费和对比分析调整 */
+  .actual-expense-item,
+  .comparison-item {
+    margin-bottom: 1rem;
+  }
+
+  .comparison-bars .progress {
+    height: 16px !important;
+  }
+
+  .comparison-bars .progress-bar {
+    font-size: 0.7rem;
+  }
+
+  .analysis-item {
+    margin: 0.1rem;
+    padding: 0.3rem;
+  }
+
+  /* 移动端时间标签调整 */
+  .time-marker .time.badge {
+    font-size: 1rem !important;
+    padding: 0.5rem 0.8rem !important;
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 576px) {
+  /* 小屏幕时间标签调整 */
+  .time-marker .time.badge {
+    font-size: 0.9rem !important;
+    padding: 0.4rem 0.6rem !important;
+    min-width: 60px;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* 大屏幕时间标签增强 */
+  .time-marker .time.badge {
+    font-size: 1.2rem !important;
+    padding: 0.7rem 1.2rem !important;
+    min-width: 90px;
   }
 }
 
