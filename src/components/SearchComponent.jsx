@@ -7,7 +7,7 @@ const SearchComponent = ({
   onCategoryChange,
   placeholder = "搜索徐州的地点、景点、餐厅...",
   showCategories = true,
-  showHistory = true,
+  showHistory = false,
   autoFocus = false,
   className = ""
 }) => {
@@ -24,6 +24,7 @@ const SearchComponent = ({
   const [suggestions, setSuggestions] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isHistoryVisible, setIsHistoryVisible] = useState(true); // 内部控制历史显示状态
   
   // Refs
   const searchInputRef = useRef(null);
@@ -156,14 +157,16 @@ const SearchComponent = ({
     const value = e.target.value;
     setQuery(value);
     setSelectedIndex(-1);
-    
+
     if (value.trim()) {
       debouncedSearch(value);
+      setIsHistoryVisible(false); // 开始输入时隐藏历史
     } else {
       setResults([]);
       setShowResults(false);
       setSuggestions([]);
       setShowSuggestions(false);
+      setIsHistoryVisible(true); // 清空输入时重新显示历史
     }
   };
 
@@ -173,6 +176,14 @@ const SearchComponent = ({
     if (query.trim()) {
       performSearch(query);
       setShowSuggestions(false);
+      setIsHistoryVisible(false);
+    }
+  };
+
+  // 处理输入框获得焦点
+  const handleInputFocus = () => {
+    if (!query.trim() && searchHistory.length > 0) {
+      setIsHistoryVisible(true);
     }
   };
 
@@ -198,6 +209,19 @@ const SearchComponent = ({
   const handleHistorySelect = (historyItem) => {
     setQuery(historyItem);
     performSearch(historyItem);
+    setIsHistoryVisible(false); // 选择后隐藏历史
+  };
+
+  // 处理关闭历史面板
+  const handleCloseHistory = () => {
+    setIsHistoryVisible(false);
+  };
+
+  // 处理清除历史
+  const handleClearHistory = () => {
+    globalSearchEngine.clearSearchHistory();
+    setSearchHistory([]);
+    setIsHistoryVisible(false); // 清除后隐藏历史面板
   };
 
   // 处理分类变化
@@ -243,6 +267,7 @@ const SearchComponent = ({
       case 'Escape':
         setShowResults(false);
         setShowSuggestions(false);
+        setIsHistoryVisible(false);
         setSelectedIndex(-1);
         break;
     }
@@ -254,6 +279,7 @@ const SearchComponent = ({
       if (resultsRef.current && !resultsRef.current.contains(event.target)) {
         setShowResults(false);
         setShowSuggestions(false);
+        setIsHistoryVisible(false);
       }
     };
 
@@ -288,6 +314,7 @@ const SearchComponent = ({
             value={query}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onFocus={handleInputFocus}
             placeholder={placeholder}
             className="search-input"
             autoComplete="off"
@@ -408,19 +435,28 @@ const SearchComponent = ({
       )}
 
       {/* 搜索历史 */}
-      {showHistory && searchHistory.length > 0 && !showResults && !query.trim() && (
+      {showHistory && isHistoryVisible && searchHistory.length > 0 && !showResults && !query.trim() && (
         <div className="search-history">
           <div className="history-header">
             <span>搜索历史</span>
-            <button 
-              className="clear-history"
-              onClick={() => {
-                globalSearchEngine.clearSearchHistory();
-                setSearchHistory([]);
-              }}
-            >
-              清除
-            </button>
+            <div>
+              {/* 清除搜索历史 */}
+              <button
+                className="clear-history"
+                onClick={handleClearHistory}
+                title="清除所有搜索历史"
+              >
+                清除
+              </button>
+              {/* 关闭搜索历史 */}
+              <button
+                className="close-history"
+                onClick={handleCloseHistory}
+                title="关闭搜索历史面板"
+              >
+                关闭
+              </button>
+            </div>
           </div>
           {searchHistory.map((item, index) => (
             <div

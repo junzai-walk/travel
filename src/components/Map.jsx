@@ -545,7 +545,7 @@ const Map = () => {
           onCategoryChange={handleSearchCategoryChange}
           placeholder="搜索徐州的地点、景点、餐厅..."
           showCategories={true}
-          showHistory={true}
+          showHistory={false}
           className="map-search"
         />
       </div>

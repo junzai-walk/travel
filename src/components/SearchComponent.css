@@ -395,6 +395,21 @@
   background: #fee;
 }
 
+.close-history {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+
+.close-history:hover {
+  background: #f8f9fa;
+}
+
 .history-item {
   display: flex;
   align-items: center;
