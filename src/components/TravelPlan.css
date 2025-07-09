@@ -103,6 +103,133 @@
   color: white !important;
 }
 
+/* 富文本编辑工具栏样式 */
+.format-toolbar {
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa !important;
+}
+
+.format-toolbar .btn {
+  border-radius: 3px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.format-toolbar .btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.format-toolbar .btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.color-btn {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 3px !important;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+  border-color: #495057 !important;
+}
+
+.rich-text-editor {
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* WYSIWYG编辑器样式 */
+.wysiwyg-editor {
+  font-family: inherit;
+  line-height: 1.5;
+  overflow-y: auto;
+  word-wrap: break-word;
+}
+
+.wysiwyg-editor:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* 占位符样式 */
+.wysiwyg-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #6c757d;
+  font-style: italic;
+  pointer-events: none;
+}
+
+.wysiwyg-editor:focus:empty:before {
+  content: attr(data-placeholder);
+  color: #adb5bd;
+}
+
+/* 确保加粗文字在编辑器中正确显示 */
+.wysiwyg-editor strong {
+  font-weight: bold;
+}
+
+/* 确保颜色文字在编辑器中正确显示 */
+.wysiwyg-editor span[style*="color"] {
+  /* 保持原有颜色样式 */
+}
+
+/* 必备清单样式 */
+.checklist-item.card {
+  transition: all 0.3s ease;
+  border: 1px solid #dee2e6;
+}
+
+.checklist-item.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.checklist-item.checked {
+  background-color: #f8f9fa;
+  border-color: #198754;
+}
+
+.checklist-item .form-check-input:checked {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.item-text {
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.item-text:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.edit-item-container {
+  animation: fadeIn 0.3s ease;
+}
+
+.checklist-stats {
+  border: 1px solid #dee2e6;
+}
+
+.add-item-section {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 1rem;
+}
+
+/* 改进的卡片头部样式 */
+.card-header.bg-success {
+  background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
   .timeline-dot::before {
@@ -116,6 +243,23 @@
   .editable-field {
     margin: -2px -4px;
     padding: 2px 4px;
+  }
+
+  .format-toolbar {
+    padding: 0.5rem !important;
+  }
+
+  .format-toolbar .d-flex {
+    flex-wrap: wrap;
+    gap: 0.5rem !important;
+  }
+
+  .color-picker {
+    flex-wrap: wrap;
+  }
+
+  .checklist-item {
+    margin-bottom: 0.5rem;
   }
 }
 

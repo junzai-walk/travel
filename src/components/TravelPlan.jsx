@@ -24,6 +24,17 @@ const TravelPlan = () => {
   const [editingActivityValue, setEditingActivityValue] = useState('');
   const [itineraryData, setItineraryData] = useState([]);
 
+  // 富文本编辑相关状态
+  const [selectedText, setSelectedText] = useState('');
+  const [showFormatToolbar, setShowFormatToolbar] = useState(false);
+  const [currentSelection, setCurrentSelection] = useState({ start: 0, end: 0 });
+  const [isSelectionBold, setIsSelectionBold] = useState(false);
+
+  // 必备清单相关状态
+  const [checklistData, setChecklistData] = useState([]);
+  const [editingChecklistItem, setEditingChecklistItem] = useState(null);
+  const [newChecklistItem, setNewChecklistItem] = useState('');
+
   // 从localStorage加载数据
   useEffect(() => {
     const savedBudget = localStorage.getItem('xuzhou-travel-budget');
@@ -49,7 +60,37 @@ const TravelPlan = () => {
     } else {
       setItineraryData(getDefaultItinerary());
     }
+
+    // 加载必备清单数据
+    const savedChecklist = localStorage.getItem('xuzhou-travel-checklist');
+    if (savedChecklist) {
+      try {
+        const parsedChecklist = JSON.parse(savedChecklist);
+        setChecklistData(parsedChecklist);
+      } catch (error) {
+        console.error('Error loading checklist data:', error);
+        setChecklistData(getDefaultChecklist());
+      }
+    } else {
+      setChecklistData(getDefaultChecklist());
+    }
   }, []);
+
+  // 获取默认必备清单数据
+  const getDefaultChecklist = () => [
+    { id: 1, item: '身份证', checked: false, category: '证件类' },
+    { id: 2, item: '手机充电器', checked: false, category: '电子设备' },
+    { id: 3, item: '换洗衣物', checked: false, category: '衣物类' },
+    { id: 4, item: '洗漱用品', checked: false, category: '生活用品' },
+    { id: 5, item: '现金和银行卡', checked: false, category: '财务类' },
+    { id: 6, item: '舒适的鞋子', checked: false, category: '衣物类' },
+    { id: 7, item: '雨伞', checked: false, category: '生活用品' },
+    { id: 8, item: '常用药品', checked: false, category: '医疗用品' },
+    { id: 9, item: '相机或拍照设备', checked: false, category: '电子设备' },
+    { id: 10, item: '零食和水', checked: false, category: '食物类' },
+    { id: 11, item: '防晒霜', checked: false, category: '护肤用品' },
+    { id: 12, item: '湿纸巾', checked: false, category: '生活用品' }
+  ];
 
   // 保存数据到localStorage
   const saveBudgetData = (newBudgetData) => {
@@ -141,8 +182,19 @@ const TravelPlan = () => {
 
   // 开始编辑行程活动
   const startEditingActivity = (dayIndex, actIndex, field, currentValue) => {
-    setEditingActivity({ dayIndex, actIndex, field });
-    setEditingActivityValue(currentValue);
+    setEditingActivity({ dayIndex, actIndex, field, originalHtml: currentValue });
+    setEditingActivityValue(currentValue || '');
+
+    // 重置选择状态
+    setIsSelectionBold(false);
+    setCurrentSelection({ start: 0, end: 0 });
+
+    // 对于富文本字段，需要在下一个渲染周期设置HTML内容
+    if (field === 'description' || field === 'tips') {
+      setTimeout(() => {
+        setEditableContent(currentValue || '');
+      }, 10);
+    }
   };
 
   // 取消编辑行程活动
@@ -158,22 +210,183 @@ const TravelPlan = () => {
     const { dayIndex, actIndex, field } = editingActivity;
     const newItineraryData = [...itineraryData];
 
+    // 对于富文本字段，从contentEditable元素获取HTML内容
+    let valueToSave = editingActivityValue;
+    if (field === 'description' || field === 'tips') {
+      valueToSave = getEditableContent() || editingActivityValue;
+    }
+
     // 更新对应字段的值
-    newItineraryData[dayIndex].activities[actIndex][field] = editingActivityValue;
+    newItineraryData[dayIndex].activities[actIndex][field] = valueToSave;
 
     saveItineraryData(newItineraryData);
     setEditingActivity(null);
     setEditingActivityValue('');
+    setIsSelectionBold(false);
+    setCurrentSelection({ start: 0, end: 0 });
   };
 
   // 处理行程编辑的键盘事件
   const handleActivityKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      // Ctrl+Enter 保存
+      e.preventDefault();
       saveActivityEdit();
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       cancelEditingActivity();
     }
+    // 允许 Enter 键在 contentEditable 中正常换行
   };
+
+  // 保存必备清单数据到localStorage
+  const saveChecklistData = (newChecklistData) => {
+    localStorage.setItem('xuzhou-travel-checklist', JSON.stringify(newChecklistData));
+    setChecklistData(newChecklistData);
+  };
+
+  // 切换清单项目的勾选状态
+  const toggleChecklistItem = (itemId) => {
+    const newChecklistData = checklistData.map(item =>
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    );
+    saveChecklistData(newChecklistData);
+  };
+
+  // 添加新的清单项目
+  const addChecklistItem = () => {
+    if (newChecklistItem.trim() === '') return;
+
+    const newItem = {
+      id: Date.now(),
+      item: newChecklistItem.trim(),
+      checked: false,
+      category: '自定义'
+    };
+
+    const newChecklistData = [...checklistData, newItem];
+    saveChecklistData(newChecklistData);
+    setNewChecklistItem('');
+  };
+
+  // 删除清单项目
+  const deleteChecklistItem = (itemId) => {
+    const newChecklistData = checklistData.filter(item => item.id !== itemId);
+    saveChecklistData(newChecklistData);
+  };
+
+  // 编辑清单项目
+  const editChecklistItem = (itemId, newText) => {
+    const newChecklistData = checklistData.map(item =>
+      item.id === itemId ? { ...item, item: newText } : item
+    );
+    saveChecklistData(newChecklistData);
+    setEditingChecklistItem(null);
+  };
+
+  // 重置必备清单为默认数据
+  const resetChecklistToDefault = () => {
+    if (window.confirm('确定要重置为默认清单吗？这将清除您的所有自定义修改。')) {
+      localStorage.removeItem('xuzhou-travel-checklist');
+      setChecklistData(getDefaultChecklist());
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 2000);
+    }
+  };
+
+  // 获取contentEditable元素的HTML内容
+  const getEditableContent = () => {
+    const editableDiv = document.querySelector('.wysiwyg-editor');
+    return editableDiv ? editableDiv.innerHTML : '';
+  };
+
+  // 设置contentEditable元素的HTML内容
+  const setEditableContent = (html) => {
+    const editableDiv = document.querySelector('.wysiwyg-editor');
+    if (editableDiv) {
+      editableDiv.innerHTML = html || '';
+    }
+  };
+
+  // 获取contentEditable元素的纯文本内容
+  const getEditablePlainText = () => {
+    const editableDiv = document.querySelector('.wysiwyg-editor');
+    return editableDiv ? (editableDiv.textContent || editableDiv.innerText || '') : '';
+  };
+
+  // 检查当前选中内容是否已加粗
+  const checkIfSelectionIsBold = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return false;
+
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+
+    // 检查选中内容或其父元素是否包含strong标签
+    let element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+
+    while (element && element.classList && !element.classList.contains('wysiwyg-editor')) {
+      if (element.tagName === 'STRONG') {
+        return true;
+      }
+      element = element.parentElement;
+    }
+
+    return false;
+  };
+
+  // 处理文本选择变化
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+      setIsSelectionBold(false);
+      return;
+    }
+
+    const isBold = checkIfSelectionIsBold();
+    setIsSelectionBold(isBold);
+
+    // 更新编辑值为当前HTML内容
+    const currentHtml = getEditableContent();
+    setEditingActivityValue(currentHtml);
+  };
+
+  // 富文本编辑相关函数
+  const applyTextFormat = (format, value = null) => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    switch (format) {
+      case 'bold':
+        // 使用浏览器原生的execCommand来处理加粗
+        document.execCommand('bold', false, null);
+        break;
+
+      case 'color':
+        // 使用浏览器原生的execCommand来处理颜色
+        document.execCommand('foreColor', false, value);
+        break;
+
+      default:
+        return;
+    }
+
+    // 更新编辑值
+    const newHtml = getEditableContent();
+    setEditingActivityValue(newHtml);
+
+    // 更新选择状态
+    setTimeout(() => {
+      handleTextSelection();
+    }, 10);
+  };
+
+  // 渲染HTML内容
+  const renderHTMLContent = (content) => {
+    return { __html: content };
+  };
+
+
 
   // 获取默认行程数据
   const getDefaultItinerary = () => [
@@ -481,14 +694,53 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'description' ? (
                             <div className="description-edit-container mb-3">
-                              <textarea
-                                value={editingActivityValue}
-                                onChange={(e) => setEditingActivityValue(e.target.value)}
+                              {/* 富文本编辑工具栏 */}
+                              <div className="format-toolbar mb-2 p-2 bg-light rounded">
+                                <div className="d-flex gap-2 align-items-center">
+                                  <button
+                                    type="button"
+                                    className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                    onClick={() => applyTextFormat('bold')}
+                                    title={isSelectionBold ? "取消加粗" : "加粗"}
+                                  >
+                                    <strong>B</strong>
+                                  </button>
+                                  <div className="color-picker d-flex gap-1">
+                                    <span className="small me-2">颜色:</span>
+                                    {/* 红橙黄绿青蓝紫 */}
+                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        className="btn btn-sm color-btn"
+                                        style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
+                                        onClick={() => applyTextFormat('color', color)}
+                                        title={`设置颜色为 ${color}`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                contentEditable
+                                onInput={(e) => {
+                                  const html = e.target.innerHTML;
+                                  setEditingActivityValue(html);
+                                }}
                                 onKeyDown={handleActivityKeyPress}
-                                className="form-control"
-                                rows="3"
-                                autoFocus
-                                placeholder="活动描述"
+                                onMouseUp={handleTextSelection}
+                                onKeyUp={handleTextSelection}
+                                onSelect={handleTextSelection}
+                                className="form-control wysiwyg-editor"
+                                style={{
+                                  minHeight: '100px',
+                                  padding: '8px 12px',
+                                  border: '1px solid #ced4da',
+                                  borderRadius: '0.375rem',
+                                  outline: 'none'
+                                }}
+                                suppressContentEditableWarning={true}
+                                data-placeholder="活动描述（所见即所得编辑）"
                               />
                               <div className="d-flex gap-2 mt-2">
                                 <button
@@ -506,14 +758,13 @@ const TravelPlan = () => {
                               </div>
                             </div>
                           ) : (
-                            <p
+                            <div
                               className="activity-description text-muted mb-3 editable-field"
                               style={{cursor: 'pointer'}}
                               onClick={() => startEditingActivity(dayIndex, actIndex, 'description', activity.description)}
                               title="点击编辑描述"
-                            >
-                              {activity.description}
-                            </p>
+                              dangerouslySetInnerHTML={renderHTMLContent(activity.description)}
+                            />
                           )}
 
                           {editingActivity &&
@@ -521,14 +772,52 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'tips' ? (
                             <div className="tips-edit-container">
-                              <textarea
-                                value={editingActivityValue}
-                                onChange={(e) => setEditingActivityValue(e.target.value)}
+                              {/* 富文本编辑工具栏 */}
+                              <div className="format-toolbar mb-2 p-2 bg-light rounded">
+                                <div className="d-flex gap-2 align-items-center">
+                                  <button
+                                    type="button"
+                                    className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                    onClick={() => applyTextFormat('bold')}
+                                    title={isSelectionBold ? "取消加粗" : "加粗"}
+                                  >
+                                    <strong>B</strong>
+                                  </button>
+                                  <div className="color-picker d-flex gap-1">
+                                    <span className="small me-2">颜色:</span>
+                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        className="btn btn-sm color-btn"
+                                        style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
+                                        onClick={() => applyTextFormat('color', color)}
+                                        title={`设置颜色为 ${color}`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                contentEditable
+                                onInput={(e) => {
+                                  const html = e.target.innerHTML;
+                                  setEditingActivityValue(html);
+                                }}
                                 onKeyDown={handleActivityKeyPress}
-                                className="form-control"
-                                rows="2"
-                                autoFocus
-                                placeholder="提示信息"
+                                onMouseUp={handleTextSelection}
+                                onKeyUp={handleTextSelection}
+                                onSelect={handleTextSelection}
+                                className="form-control wysiwyg-editor"
+                                style={{
+                                  minHeight: '80px',
+                                  padding: '8px 12px',
+                                  border: '1px solid #ced4da',
+                                  borderRadius: '0.375rem',
+                                  outline: 'none'
+                                }}
+                                suppressContentEditableWarning={true}
+                                data-placeholder="提示信息（所见即所得编辑）"
                               />
                               <div className="d-flex gap-2 mt-2">
                                 <button
@@ -552,7 +841,7 @@ const TravelPlan = () => {
                               onClick={() => startEditingActivity(dayIndex, actIndex, 'tips', activity.tips)}
                               title="点击编辑提示"
                             >
-                              <small>💡 {activity.tips}</small>
+                              <small>💡 <span dangerouslySetInnerHTML={renderHTMLContent(activity.tips)} /></small>
                             </div>
                           )}
                         </div>
@@ -663,6 +952,138 @@ const TravelPlan = () => {
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 出游必备清单 */}
+        <div className="checklist-section mt-5">
+          <div className="row">
+            <div className="col-12">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-success text-white">
+                  <div className="row align-items-center">
+                    <div className="col-md-6">
+                      <h3 className="h5 mb-0">📋 出游必备清单</h3>
+                    </div>
+                    <div className="col-md-6 text-md-end">
+                      <small className="me-3">💡 勾选已准备的物品</small>
+                      <button className="btn btn-outline-light btn-sm" onClick={resetChecklistToDefault}>
+                        重置为默认清单
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {showSaveMessage && (
+                  <div className="alert alert-success mb-0">
+                    ✅ 清单已保存到本地
+                  </div>
+                )}
+
+                <div className="card-body">
+                  {/* 添加新项目 */}
+                  <div className="add-item-section mb-4">
+                    <div className="row">
+                      <div className="col-md-8">
+                        <input
+                          type="text"
+                          value={newChecklistItem}
+                          onChange={(e) => setNewChecklistItem(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addChecklistItem()}
+                          className="form-control"
+                          placeholder="添加新的必备物品..."
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <button
+                          className="btn btn-primary w-100"
+                          onClick={addChecklistItem}
+                          disabled={!newChecklistItem.trim()}
+                        >
+                          ➕ 添加物品
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 清单项目 */}
+                  <div className="row g-3">
+                    {checklistData.map((item) => (
+                      <div key={item.id} className="col-lg-4 col-md-6">
+                        <div className={`checklist-item card h-100 ${item.checked ? 'checked' : ''}`}>
+                          <div className="card-body d-flex align-items-center">
+                            <div className="form-check me-3">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={() => toggleChecklistItem(item.id)}
+                                id={`checklist-${item.id}`}
+                              />
+                            </div>
+                            <div className="flex-grow-1">
+                              {editingChecklistItem === item.id ? (
+                                <div className="edit-item-container">
+                                  <input
+                                    type="text"
+                                    defaultValue={item.item}
+                                    onBlur={(e) => editChecklistItem(item.id, e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        editChecklistItem(item.id, e.target.value);
+                                      }
+                                    }}
+                                    className="form-control form-control-sm"
+                                    autoFocus
+                                  />
+                                </div>
+                              ) : (
+                                <div
+                                  className={`item-text ${item.checked ? 'text-decoration-line-through text-muted' : ''}`}
+                                  onClick={() => setEditingChecklistItem(item.id)}
+                                  style={{cursor: 'pointer'}}
+                                  title="点击编辑"
+                                >
+                                  {item.item}
+                                </div>
+                              )}
+                              <small className="text-muted">{item.category}</small>
+                            </div>
+                            <button
+                              className="btn btn-outline-danger btn-sm ms-2"
+                              onClick={() => deleteChecklistItem(item.id)}
+                              title="删除项目"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 统计信息 */}
+                  <div className="checklist-stats mt-4 p-3 bg-light rounded">
+                    <div className="row text-center">
+                      <div className="col-md-4">
+                        <h6 className="mb-1">总计物品</h6>
+                        <span className="h5 text-primary">{checklistData.length}</span>
+                      </div>
+                      <div className="col-md-4">
+                        <h6 className="mb-1">已准备</h6>
+                        <span className="h5 text-success">{checklistData.filter(item => item.checked).length}</span>
+                      </div>
+                      <div className="col-md-4">
+                        <h6 className="mb-1">完成度</h6>
+                        <span className="h5 text-info">
+                          {checklistData.length > 0 ? Math.round((checklistData.filter(item => item.checked).length / checklistData.length) * 100) : 0}%
+                        </span>
                       </div>
                     </div>
                   </div>
