@@ -116,129 +116,189 @@ const Food = () => {
   ];
 
   return (
-    <div className="food">
-      <div className="section-header">
-        <h2>🍜 美食推荐</h2>
-        <p>品味徐州，从舌尖开始的旅行</p>
-      </div>
-
-      <div className="food-section">
-        <h3>🏆 必尝特色美食</h3>
-        <div className="specialties-grid">
-          {specialties.map((food, index) => (
-            <div key={index} className={`specialty-card ${food.mustTry ? 'must-try' : ''}`}>
-              {food.mustTry && <div className="must-try-badge">必尝</div>}
-              <div className="food-icon">{food.icon}</div>
-              <h4>{food.name}</h4>
-              <p className="description">{food.description}</p>
-              <div className="food-info">
-                <div className="price">{food.price}</div>
-                <div className="rating">
-                  ⭐ {food.rating}
-                </div>
-              </div>
-              <div className="tips">💡 {food.tips}</div>
-            </div>
-          ))}
+    <div className="food bg-light min-vh-100">
+      <div className="container py-5">
+        <div className="section-header text-center mb-5">
+          <h2 className="display-5 mb-3">🍜 美食推荐</h2>
+          <p className="lead text-muted">品味徐州，从舌尖开始的旅行</p>
         </div>
-      </div>
 
-      <div className="food-section">
-        <h3>🏪 推荐餐厅</h3>
-        <div className="restaurants-grid">
-          {restaurants.map((restaurant, index) => (
-            <div key={index} className="restaurant-card">
-              <div className="restaurant-header">
-                <h4>{restaurant.name}</h4>
-                <span className="restaurant-type">{restaurant.type}</span>
-              </div>
-              
-              <div className="restaurant-info">
-                <div className="info-row">
-                  <span>📍</span>
-                  <span>{restaurant.address}</span>
-                </div>
-                <div className="info-row">
-                  <span>⭐</span>
-                  <span>{restaurant.rating} 分</span>
-                </div>
-                <div className="info-row">
-                  <span>💰</span>
-                  <span>{restaurant.price}</span>
-                </div>
-                <div className="info-row">
-                  <span>🍽️</span>
-                  <span>{restaurant.specialty}</span>
-                </div>
-                <div className="info-row">
-                  <span>🕐</span>
-                  <span>{restaurant.hours}</span>
-                </div>
-                <div className="info-row">
-                  <span>🚇</span>
-                  <span>{restaurant.distance}</span>
+        {/* 必尝特色美食 */}
+        <div className="food-section mb-5">
+          <h3 className="text-center mb-4">🏆 必尝特色美食</h3>
+          <div className="row g-4">
+            {specialties.map((food, index) => (
+              <div key={index} className="col-lg-3 col-md-6">
+                <div className={`specialty-card card h-100 border-0 shadow-sm position-relative ${food.mustTry ? 'must-try' : ''}`}>
+                  {food.mustTry && (
+                    <div className="position-absolute top-0 end-0 m-2">
+                      <span className="badge bg-danger">必尝</span>
+                    </div>
+                  )}
+                  <div className="card-body text-center">
+                    <div className="food-icon fs-1 mb-3">{food.icon}</div>
+                    <h4 className="h5 mb-3">{food.name}</h4>
+                    <p className="text-muted mb-3">{food.description}</p>
+                    <div className="food-info d-flex justify-content-between align-items-center mb-3">
+                      <div className="price text-success fw-bold">{food.price}</div>
+                      <div className="rating text-warning">
+                        ⭐ {food.rating}
+                      </div>
+                    </div>
+                    <div className="tips alert alert-info mb-0">
+                      <small>💡 {food.tips}</small>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="restaurant-tips">
-                💡 {restaurant.tips}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="food-section">
-        <h3>🗺️ 美食聚集地</h3>
-        <div className="food-areas-grid">
-          {foodAreas.map((area, index) => (
-            <div key={index} className="food-area-card">
-              <div className="area-icon">{area.icon}</div>
-              <h4>{area.name}</h4>
-              <p>{area.description}</p>
-              
-              <div className="highlights">
-                <h5>🌟 特色美食</h5>
-                <div className="highlight-tags">
-                  {area.highlights.map((item, i) => (
-                    <span key={i} className="highlight-tag">{item}</span>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="area-info">
-                <div className="info-item">
-                  <strong>最佳时间：</strong>{area.bestTime}
-                </div>
-                <div className="info-item">
-                  <strong>交通：</strong>{area.transport}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="food-tips">
-        <h3>🎯 用餐建议</h3>
-        <div className="tips-grid">
-          <div className="tip-card">
-            <h4>🕐 用餐时间</h4>
-            <p>早餐：羊肉汤配烧饼<br/>
-               午餐：淮扬菜正餐<br/>
-               晚餐：小吃街觅食</p>
+            ))}
           </div>
-          <div className="tip-card">
-            <h4>💰 预算建议</h4>
-            <p>两人三餐约¥150-200<br/>
-               包含特色小吃和正餐<br/>
-               可适当增加预算品尝更多</p>
+        </div>
+
+        {/* 推荐餐厅 */}
+        <div className="food-section mb-5">
+          <h3 className="text-center mb-4">🏪 推荐餐厅</h3>
+          <div className="row g-4">
+            {restaurants.map((restaurant, index) => (
+              <div key={index} className="col-lg-6">
+                <div className="restaurant-card card h-100 border-0 shadow-sm">
+                  <div className="card-body">
+                    <div className="restaurant-header d-flex justify-content-between align-items-start mb-3">
+                      <h4 className="h5 mb-0">{restaurant.name}</h4>
+                      <span className="badge bg-primary">{restaurant.type}</span>
+                    </div>
+
+                    <div className="restaurant-info">
+                      <div className="row g-2 mb-2">
+                        <div className="col-12">
+                          <small className="text-muted">
+                            <span className="me-2">📍</span>
+                            {restaurant.address}
+                          </small>
+                        </div>
+                      </div>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <small className="text-muted">
+                            <span className="me-2">⭐</span>
+                            {restaurant.rating} 分
+                          </small>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted">
+                            <span className="me-2">💰</span>
+                            {restaurant.price}
+                          </small>
+                        </div>
+                      </div>
+                      <div className="row g-2 mb-2">
+                        <div className="col-12">
+                          <small className="text-muted">
+                            <span className="me-2">🍽️</span>
+                            {restaurant.specialty}
+                          </small>
+                        </div>
+                      </div>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <small className="text-muted">
+                            <span className="me-2">🕐</span>
+                            {restaurant.hours}
+                          </small>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted">
+                            <span className="me-2">🚇</span>
+                            {restaurant.distance}
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="restaurant-tips alert alert-info mb-0 mt-3">
+                      <small>💡 {restaurant.tips}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="tip-card">
-            <h4>📱 实用APP</h4>
-            <p>大众点评、美团<br/>
-               查看评价和优惠<br/>
-               提前预订热门餐厅</p>
+        </div>
+
+        {/* 美食聚集地 */}
+        <div className="food-section mb-5">
+          <h3 className="text-center mb-4">🗺️ 美食聚集地</h3>
+          <div className="row g-4">
+            {foodAreas.map((area, index) => (
+              <div key={index} className="col-lg-4 col-md-6">
+                <div className="food-area-card card h-100 border-0 shadow-sm">
+                  <div className="card-body text-center">
+                    <div className="area-icon fs-1 mb-3">{area.icon}</div>
+                    <h4 className="h5 mb-3">{area.name}</h4>
+                    <p className="text-muted mb-3">{area.description}</p>
+
+                    <div className="highlights mb-3">
+                      <h5 className="h6 mb-2">🌟 特色美食</h5>
+                      <div className="highlight-tags d-flex flex-wrap justify-content-center gap-1">
+                        {area.highlights.map((item, i) => (
+                          <span key={i} className="badge bg-secondary">{item}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="area-info text-start">
+                      <div className="info-item mb-2">
+                        <small className="text-muted">
+                          <strong>最佳时间：</strong>{area.bestTime}
+                        </small>
+                      </div>
+                      <div className="info-item">
+                        <small className="text-muted">
+                          <strong>交通：</strong>{area.transport}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 用餐建议 */}
+        <div className="food-tips">
+          <h3 className="text-center mb-4">🎯 用餐建议</h3>
+          <div className="row g-4">
+            <div className="col-lg-4 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">🕐 用餐时间</h4>
+                  <p className="small text-muted">早餐：羊肉汤配烧饼<br/>
+                     午餐：淮扬菜正餐<br/>
+                     晚餐：小吃街觅食</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-4 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">💰 预算建议</h4>
+                  <p className="small text-muted">两人三餐约¥150-200<br/>
+                     包含特色小吃和正餐<br/>
+                     可适当增加预算品尝更多</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-4 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">📱 实用APP</h4>
+                  <p className="small text-muted">大众点评、美团<br/>
+                     查看评价和优惠<br/>
+                     提前预订热门餐厅</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

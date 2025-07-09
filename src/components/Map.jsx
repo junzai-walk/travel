@@ -42,8 +42,7 @@ const Map = () => {
       id: 1,
       name: '云龙湖风景区',
       type: '景点',
-      lat: 34.2611,
-      lng: 117.2847,
+      location: { lat: 34.2611, lng: 117.2847 },
       description: '徐州最美的湖泊，适合散步和拍照',
       rating: 4.8,
       tips: '建议租借共享单车环湖游览',
@@ -53,8 +52,7 @@ const Map = () => {
       id: 2,
       name: '彭祖园',
       type: '景点',
-      lat: 34.2156,
-      lng: 117.1836,
+      location: { lat: 34.2156, lng: 117.1836 },
       description: '了解徐州历史文化的好地方',
       rating: 4.5,
       tips: '园林景观优美，适合慢慢游览',
@@ -64,8 +62,7 @@ const Map = () => {
       id: 3,
       name: '徐州博物馆',
       type: '景点',
-      lat: 34.2043,
-      lng: 117.2847,
+      location: { lat: 34.2043, lng: 117.2847 },
       description: '了解徐州深厚的历史文化',
       rating: 4.6,
       tips: '免费参观，需要提前预约',
@@ -75,8 +72,7 @@ const Map = () => {
       id: 4,
       name: '户部山古建筑群',
       type: '景点',
-      lat: 34.2667,
-      lng: 117.1847,
+      location: { lat: 34.2667, lng: 117.1847 },
       description: '徐州历史文化街区',
       rating: 4.4,
       tips: '古色古香，适合拍照',
@@ -86,8 +82,7 @@ const Map = () => {
       id: 5,
       name: '马市街小吃街',
       type: '美食',
-      lat: 34.2567,
-      lng: 117.1947,
+      location: { lat: 34.2567, lng: 117.1947 },
       description: '徐州最著名的小吃街',
       rating: 4.7,
       tips: '晚上最热闹，品种最全',
@@ -97,8 +92,7 @@ const Map = () => {
       id: 6,
       name: '老徐州羊肉汤馆',
       type: '美食',
-      lat: 34.2511,
-      lng: 117.2747,
+      location: { lat: 34.2511, lng: 117.2747 },
       description: '正宗的徐州羊肉汤',
       rating: 4.8,
       tips: '早去不排队，羊肉汤是招牌',
@@ -108,8 +102,7 @@ const Map = () => {
       id: 7,
       name: '徐州苏宁凯悦酒店',
       type: '住宿',
-      lat: 34.2611,
-      lng: 117.2747,
+      location: { lat: 34.2611, lng: 117.2747 },
       description: '五星级酒店，湖景房',
       rating: 4.8,
       tips: '位置绝佳，设施完善',
@@ -119,8 +112,7 @@ const Map = () => {
       id: 8,
       name: '徐州东站',
       type: '交通',
-      lat: 34.2156,
-      lng: 117.3847,
+      location: { lat: 34.2156, lng: 117.3847 },
       description: '高铁站，往返南京的主要交通枢纽',
       rating: 4.5,
       tips: '地铁1号线可直达市区',
@@ -168,22 +160,27 @@ const Map = () => {
 
       const mapInstance = new window.BMap.Map(mapRef.current);
       const point = new window.BMap.Point(117.2847, 34.2611); // 徐州中心点
-      
+
       mapInstance.centerAndZoom(point, 12);
       mapInstance.enableScrollWheelZoom(true);
-      
+
       // 添加控件
       mapInstance.addControl(new window.BMap.NavigationControl());
       mapInstance.addControl(new window.BMap.ScaleControl());
       mapInstance.addControl(new window.BMap.OverviewMapControl());
 
+      // 清除所有现有标记（防止重复）
+      mapInstance.clearOverlays();
+
       // 添加POI标记
       const markers = [];
       pois.forEach(poi => {
-        const poiPoint = new window.BMap.Point(poi.lng, poi.lat);
+        const poiPoint = new window.BMap.Point(poi.location.lng, poi.location.lat);
         const marker = new window.BMap.Marker(poiPoint);
 
-        // 存储POI信息到marker对象
+        // 标记为POI标记，用于后续识别
+        marker.isPOIMarker = true;
+        marker.poiId = poi.id;
         marker.poiData = poi;
         markers.push(marker);
 
@@ -237,10 +234,10 @@ const Map = () => {
   useEffect(() => {
     if (!map || !window.BMap) return;
 
-    // 清除之前的自定义标记
+    // 清除之前的自定义标记（只清除自定义标记，保留POI标记）
     const overlays = map.getOverlays();
     overlays.forEach(overlay => {
-      if (overlay.customMarker) {
+      if (overlay.customMarker && !overlay.isPOIMarker) {
         map.removeOverlay(overlay);
       }
     });
@@ -265,6 +262,7 @@ const Map = () => {
       const baiduMarker = new window.BMap.Marker(point, { icon });
       baiduMarker.customMarker = true;
       baiduMarker.markerId = marker.id;
+      baiduMarker.isPOIMarker = false; // 明确标记为非POI标记
 
       // 创建信息窗口
       const infoWindow = new window.BMap.InfoWindow(`
@@ -289,15 +287,21 @@ const Map = () => {
 
   // 高亮地图标记
   const highlightMapMarker = (poiId) => {
-    // 清除之前的高亮
+    // 清除之前的高亮标记
     if (highlightedMarker) {
-      // 恢复原始图标
-      const originalIcon = new window.BMap.Icon(
-        'https://api.map.baidu.com/img/markers.png',
-        new window.BMap.Size(23, 25),
-        { offset: new window.BMap.Size(10, 25) }
-      );
-      highlightedMarker.setIcon(originalIcon);
+      // 如果是临时标记，直接移除
+      if (highlightedMarker.isTemporary) {
+        map.removeOverlay(highlightedMarker);
+      } else if (highlightedMarker.isPOIMarker) {
+        // 如果是POI标记，恢复原始图标
+        const originalIcon = new window.BMap.Icon(
+          'https://api.map.baidu.com/img/markers.png',
+          new window.BMap.Size(23, 25),
+          { offset: new window.BMap.Size(10, 25) }
+        );
+        highlightedMarker.setIcon(originalIcon);
+      }
+      setHighlightedMarker(null);
     }
 
     // 找到对应的标记并高亮
@@ -309,7 +313,7 @@ const Map = () => {
         new window.BMap.Size(23, 25),
         {
           offset: new window.BMap.Size(10, 25),
-          imageOffset: new window.BMap.Size(0, -25) // 使用红色标记
+          imageOffset: new window.BMap.Size(0, -50) // 使用蓝色标记
         }
       );
       targetMarker.setIcon(highlightIcon);
@@ -340,6 +344,22 @@ const Map = () => {
       const point = new window.BMap.Point(result.location.lng, result.location.lat);
       map.centerAndZoom(point, 16);
 
+      // 清除之前的高亮标记
+      if (highlightedMarker) {
+        if (highlightedMarker.isTemporary) {
+          map.removeOverlay(highlightedMarker);
+        } else if (highlightedMarker.isPOIMarker) {
+          // 恢复POI标记的原始图标
+          const originalIcon = new window.BMap.Icon(
+            'https://api.map.baidu.com/img/markers.png',
+            new window.BMap.Size(23, 25),
+            { offset: new window.BMap.Size(10, 25) }
+          );
+          highlightedMarker.setIcon(originalIcon);
+        }
+        setHighlightedMarker(null);
+      }
+
       // 如果是本地POI数据，高亮对应标记
       const matchingPoi = pois.find(poi => poi.id === result.id);
       if (matchingPoi) {
@@ -357,12 +377,9 @@ const Map = () => {
           }
         );
         marker.setIcon(highlightIcon);
+        marker.isTemporary = true; // 标记为临时标记
+        marker.isPOIMarker = false;
         map.addOverlay(marker);
-
-        // 清除之前的高亮标记
-        if (highlightedMarker && highlightedMarker !== marker) {
-          map.removeOverlay(highlightedMarker);
-        }
         setHighlightedMarker(marker);
       }
 
@@ -518,7 +535,7 @@ const Map = () => {
 
   const handlePoiClick = (poi) => {
     if (map) {
-      const point = new window.BMap.Point(poi.lng, poi.lat);
+      const point = new window.BMap.Point(poi.location.lng, poi.location.lat);
       map.centerAndZoom(point, 15);
       setSelectedPoi(poi);
     }

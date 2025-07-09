@@ -137,7 +137,7 @@
 
 .time {
   font-weight: bold;
-  color: #fff;
+  color: #000;
 }
 
 .train {
@@ -181,6 +181,7 @@
 .transport-details p {
   margin: 0.5rem 0;
   color: #666;
+  text-align: left;
 }
 
 .tips {
@@ -220,7 +221,7 @@
 
 .tip-card h4 {
   margin: 0 0 1rem 0;
-  color: white;
+  color: #000;
 }
 
 .tip-card p {

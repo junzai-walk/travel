@@ -19,6 +19,11 @@ const TravelPlan = () => {
   const [showSaveMessage, setShowSaveMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // 行程编辑相关状态
+  const [editingActivity, setEditingActivity] = useState(null); // 格式: {dayIndex, actIndex, field}
+  const [editingActivityValue, setEditingActivityValue] = useState('');
+  const [itineraryData, setItineraryData] = useState([]);
+
   // 从localStorage加载数据
   useEffect(() => {
     const savedBudget = localStorage.getItem('xuzhou-travel-budget');
@@ -29,6 +34,20 @@ const TravelPlan = () => {
       } catch (error) {
         console.error('Error loading budget data:', error);
       }
+    }
+
+    // 加载行程数据
+    const savedItinerary = localStorage.getItem('xuzhou-travel-itinerary');
+    if (savedItinerary) {
+      try {
+        const parsedItinerary = JSON.parse(savedItinerary);
+        setItineraryData(parsedItinerary);
+      } catch (error) {
+        console.error('Error loading itinerary data:', error);
+        setItineraryData(getDefaultItinerary());
+      }
+    } else {
+      setItineraryData(getDefaultItinerary());
     }
   }, []);
 
@@ -112,7 +131,52 @@ const TravelPlan = () => {
     }
   };
 
-  const itinerary = [
+  // 保存行程数据到localStorage
+  const saveItineraryData = (newItineraryData) => {
+    localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
+    setItineraryData(newItineraryData);
+    setShowSaveMessage(true);
+    setTimeout(() => setShowSaveMessage(false), 2000);
+  };
+
+  // 开始编辑行程活动
+  const startEditingActivity = (dayIndex, actIndex, field, currentValue) => {
+    setEditingActivity({ dayIndex, actIndex, field });
+    setEditingActivityValue(currentValue);
+  };
+
+  // 取消编辑行程活动
+  const cancelEditingActivity = () => {
+    setEditingActivity(null);
+    setEditingActivityValue('');
+  };
+
+  // 保存行程活动编辑
+  const saveActivityEdit = () => {
+    if (!editingActivity) return;
+
+    const { dayIndex, actIndex, field } = editingActivity;
+    const newItineraryData = [...itineraryData];
+
+    // 更新对应字段的值
+    newItineraryData[dayIndex].activities[actIndex][field] = editingActivityValue;
+
+    saveItineraryData(newItineraryData);
+    setEditingActivity(null);
+    setEditingActivityValue('');
+  };
+
+  // 处理行程编辑的键盘事件
+  const handleActivityKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      saveActivityEdit();
+    } else if (e.key === 'Escape') {
+      cancelEditingActivity();
+    }
+  };
+
+  // 获取默认行程数据
+  const getDefaultItinerary = () => [
     {
       day: '周五',
       date: '7月18日',
@@ -269,158 +333,389 @@ const TravelPlan = () => {
     }
   ];
 
+  // 重置行程为默认数据
+  const resetItineraryToDefault = () => {
+    if (window.confirm('确定要重置为默认行程吗？这将清除您的所有自定义修改。')) {
+      localStorage.removeItem('xuzhou-travel-itinerary');
+      setItineraryData(getDefaultItinerary());
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 2000);
+    }
+  };
+
 
 
   return (
     <div className="travel-plan">
-      <div className="section-header">
-        <h2>📅 行程安排</h2>
-        <p>轻松愉快的徐州周末游，两天一夜精华体验</p>
-      </div>
-
-      <div className="itinerary-container">
-        {itinerary.map((day, dayIndex) => (
-          <div key={dayIndex} className="day-section">
-            <div className="day-header">
-              <div className="day-info">
-                <h3>{day.day}</h3>
-                <span className="date">{day.date}</span>
-              </div>
-              <h4 className="day-title">{day.title}</h4>
-            </div>
-
-            <div className="activities-timeline">
-              {day.activities.map((activity, actIndex) => (
-                <div key={actIndex} className="activity-item">
-                  <div className="time-marker">
-                    <span className="time">{activity.time}</span>
-                    <div className="timeline-dot"></div>
-                  </div>
-                  
-                  <div className="activity-content">
-                    <div className="activity-header">
-                      <span className="activity-icon">{activity.icon}</span>
-                      <h5>{activity.activity}</h5>
-                    </div>
-                    
-                    <p className="activity-description">{activity.description}</p>
-                    
-                    <div className="activity-tips">
-                      💡 {activity.tips}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="budget-section">
-        <div className="budget-header">
-          <h3>💰 预算参考</h3>
-          <div className="budget-controls">
-            <p className="budget-hint">💡 点击金额可以编辑自定义预算</p>
-            <button className="reset-budget-btn" onClick={resetToDefault}>
-              重置为默认预算
+      <div className="container py-5">
+        <div className="section-header text-center mb-5">
+          <h2 className="display-5 mb-3">📅 行程安排</h2>
+          <p className="lead text-muted">轻松愉快的徐州周末游，两天一夜精华体验</p>
+          <div className="mt-3">
+            <small className="text-muted me-3">💡 点击任意内容可以编辑自定义行程</small>
+            <button className="btn btn-outline-primary btn-sm" onClick={resetItineraryToDefault}>
+              重置为默认行程
             </button>
           </div>
         </div>
 
-        {showSaveMessage && (
-          <div className="save-message">
-            ✅ 预算已保存到本地
-          </div>
-        )}
-
-        <div className="budget-container">
-          <div className="budget-grid">
-            {budgetData.map((item) => (
-              <div key={item.id} className="budget-item">
-                <div className="budget-category">{item.category}</div>
-                <div className="budget-amount-container">
-                  {editingItem === item.id ? (
-                    <div className="budget-edit-container">
-                      <div className="budget-input-wrapper">
-                        <span className="currency-symbol">¥</span>
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => handleInputChange(e.target.value)}
-                          onKeyDown={(e) => handleKeyPress(e, item.id)}
-                          className="budget-input"
-                          autoFocus
-                          placeholder="输入金额"
-                        />
+        <div className="itinerary-container">
+          {itineraryData.map((day, dayIndex) => (
+            <div key={dayIndex} className="day-section mb-5">
+              <div className="row">
+                <div className="col-12">
+                  <div className="day-header card border-0 shadow-sm mb-4">
+                    <div className="card-body">
+                      <div className="row align-items-center">
+                        <div className="col-md-6">
+                          <div className="day-info d-flex align-items-center">
+                            <h3 className="h4 mb-0 me-3">{day.day}</h3>
+                            <span className="badge bg-primary">{day.date}</span>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <h4 className="h5 mb-0 text-md-end mt-2 mt-md-0">{day.title}</h4>
+                        </div>
                       </div>
-                      <div className="budget-edit-buttons">
-                        <button
-                          className="save-btn"
-                          onClick={() => saveEdit(item.id)}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          className="cancel-btn"
-                          onClick={cancelEditing}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      {errorMessage && (
-                        <div className="error-message">{errorMessage}</div>
-                      )}
                     </div>
-                  ) : (
-                    <div
-                      className="budget-amount editable"
-                      onClick={() => startEditing(item)}
-                      title="点击编辑金额"
-                    >
-                      ¥{item.amount}
-                    </div>
-                  )}
+                  </div>
                 </div>
-                <div className="budget-detail">{item.detail}</div>
               </div>
-            ))}
 
-            {/* 总计行 */}
-            <div className="budget-item total">
-              <div className="budget-category">总计</div>
-              <div className="budget-amount">¥{totalAmount}</div>
-              <div className="budget-detail">两人周末游预算</div>
+              <div className="activities-timeline">
+                {day.activities.map((activity, actIndex) => (
+                  <div key={actIndex} className="row mb-4">
+                    <div className="col-md-2 col-3">
+                      <div className="time-marker text-center">
+                        {editingActivity &&
+                         editingActivity.dayIndex === dayIndex &&
+                         editingActivity.actIndex === actIndex &&
+                         editingActivity.field === 'time' ? (
+                          <div className="time-edit-container">
+                            <input
+                              type="text"
+                              value={editingActivityValue}
+                              onChange={(e) => setEditingActivityValue(e.target.value)}
+                              onKeyDown={handleActivityKeyPress}
+                              className="form-control form-control-sm"
+                              autoFocus
+                              placeholder="时间"
+                            />
+                            <div className="d-flex gap-1 mt-1">
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={saveActivityEdit}
+                              >
+                                ✓
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={cancelEditingActivity}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span
+                            className="time badge bg-secondary editable-field"
+                            style={{color: '#fff', cursor: 'pointer'}}
+                            onClick={() => startEditingActivity(dayIndex, actIndex, 'time', activity.time)}
+                            title="点击编辑时间"
+                          >
+                            {activity.time}
+                          </span>
+                        )}
+                        <div className="timeline-dot mx-auto mt-2"></div>
+                      </div>
+                    </div>
+
+                    <div className="col-md-10 col-9">
+                      <div className="activity-content card border-0 shadow-sm">
+                        <div className="card-body">
+                          <div className="activity-header d-flex align-items-center mb-3">
+                            <span className="activity-icon fs-4 me-3">{activity.icon}</span>
+                            {editingActivity &&
+                             editingActivity.dayIndex === dayIndex &&
+                             editingActivity.actIndex === actIndex &&
+                             editingActivity.field === 'activity' ? (
+                              <div className="activity-edit-container flex-grow-1">
+                                <input
+                                  type="text"
+                                  value={editingActivityValue}
+                                  onChange={(e) => setEditingActivityValue(e.target.value)}
+                                  onKeyDown={handleActivityKeyPress}
+                                  className="form-control"
+                                  autoFocus
+                                  placeholder="活动名称"
+                                />
+                                <div className="d-flex gap-2 mt-2">
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={saveActivityEdit}
+                                  >
+                                    ✓ 保存
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={cancelEditingActivity}
+                                  >
+                                    ✕ 取消
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <h5
+                                className="mb-0 editable-field"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => startEditingActivity(dayIndex, actIndex, 'activity', activity.activity)}
+                                title="点击编辑活动名称"
+                              >
+                                {activity.activity}
+                              </h5>
+                            )}
+                          </div>
+
+                          {editingActivity &&
+                           editingActivity.dayIndex === dayIndex &&
+                           editingActivity.actIndex === actIndex &&
+                           editingActivity.field === 'description' ? (
+                            <div className="description-edit-container mb-3">
+                              <textarea
+                                value={editingActivityValue}
+                                onChange={(e) => setEditingActivityValue(e.target.value)}
+                                onKeyDown={handleActivityKeyPress}
+                                className="form-control"
+                                rows="3"
+                                autoFocus
+                                placeholder="活动描述"
+                              />
+                              <div className="d-flex gap-2 mt-2">
+                                <button
+                                  className="btn btn-success btn-sm"
+                                  onClick={saveActivityEdit}
+                                >
+                                  ✓ 保存
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={cancelEditingActivity}
+                                >
+                                  ✕ 取消
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p
+                              className="activity-description text-muted mb-3 editable-field"
+                              style={{cursor: 'pointer'}}
+                              onClick={() => startEditingActivity(dayIndex, actIndex, 'description', activity.description)}
+                              title="点击编辑描述"
+                            >
+                              {activity.description}
+                            </p>
+                          )}
+
+                          {editingActivity &&
+                           editingActivity.dayIndex === dayIndex &&
+                           editingActivity.actIndex === actIndex &&
+                           editingActivity.field === 'tips' ? (
+                            <div className="tips-edit-container">
+                              <textarea
+                                value={editingActivityValue}
+                                onChange={(e) => setEditingActivityValue(e.target.value)}
+                                onKeyDown={handleActivityKeyPress}
+                                className="form-control"
+                                rows="2"
+                                autoFocus
+                                placeholder="提示信息"
+                              />
+                              <div className="d-flex gap-2 mt-2">
+                                <button
+                                  className="btn btn-success btn-sm"
+                                  onClick={saveActivityEdit}
+                                >
+                                  ✓ 保存
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={cancelEditingActivity}
+                                >
+                                  ✕ 取消
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="activity-tips alert alert-info mb-0 editable-field"
+                              style={{cursor: 'pointer'}}
+                              onClick={() => startEditingActivity(dayIndex, actIndex, 'tips', activity.tips)}
+                              title="点击编辑提示"
+                            >
+                              <small>💡 {activity.tips}</small>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 预算部分 */}
+        <div className="budget-section mt-5">
+          <div className="row">
+            <div className="col-12">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-primary text-white">
+                  <div className="row align-items-center">
+                    <div className="col-md-6">
+                      <h3 className="h5 mb-0">💰 预算参考</h3>
+                    </div>
+                    <div className="col-md-6 text-md-end">
+                      <small className="me-3">💡 点击金额可以编辑自定义预算</small>
+                      <button className="btn btn-outline-light btn-sm" onClick={resetToDefault}>
+                        重置为默认预算
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {showSaveMessage && (
+                  <div className="alert alert-success mb-0">
+                    ✅ 预算已保存到本地
+                  </div>
+                )}
+
+                <div className="card-body">
+                  <div className="row g-3">
+                    {budgetData.map((item) => (
+                      <div key={item.id} className="col-lg-4 col-md-6">
+                        <div className="budget-item card h-100">
+                          <div className="card-body">
+                            <h6 className="card-title">{item.category}</h6>
+                            <div className="budget-amount-container">
+                              {editingItem === item.id ? (
+                                <div className="budget-edit-container">
+                                  <div className="input-group mb-2">
+                                    <span className="input-group-text">¥</span>
+                                    <input
+                                      type="text"
+                                      value={editValue}
+                                      onChange={(e) => handleInputChange(e.target.value)}
+                                      onKeyDown={(e) => handleKeyPress(e, item.id)}
+                                      className="form-control"
+                                      autoFocus
+                                      placeholder="输入金额"
+                                    />
+                                  </div>
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-success btn-sm"
+                                      onClick={() => saveEdit(item.id)}
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      className="btn btn-secondary btn-sm"
+                                      onClick={cancelEditing}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                  {errorMessage && (
+                                    <div className="text-danger small mt-1">{errorMessage}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div
+                                  className="budget-amount h4 text-primary cursor-pointer"
+                                  onClick={() => startEditing(item)}
+                                  title="点击编辑金额"
+                                  style={{cursor: 'pointer'}}
+                                >
+                                  ¥{item.amount}
+                                </div>
+                              )}
+                            </div>
+                            <p className="card-text text-muted small">{item.detail}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 总计行 */}
+                    <div className="col-12">
+                      <div className="card bg-light">
+                        <div className="card-body">
+                          <div className="row align-items-center">
+                            <div className="col-md-4">
+                              <h5 className="mb-0">总计</h5>
+                            </div>
+                            <div className="col-md-4">
+                              <h4 className="text-success mb-0">¥{totalAmount}</h4>
+                            </div>
+                            <div className="col-md-4">
+                              <p className="text-muted mb-0">两人周末游预算</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="plan-tips">
-        <h3>🎯 行程建议</h3>
-        <div className="tips-grid">
-          <div className="tip-card">
-            <h4>⏰ 时间安排</h4>
-            <p>行程相对轻松，不会过于紧凑<br/>
-               可根据实际情况调整时间<br/>
-               重点是享受两人时光</p>
-          </div>
-          <div className="tip-card">
-            <h4>🌤️ 天气准备</h4>
-            <p>查看天气预报<br/>
-               准备合适的衣物<br/>
-               雨天备选室内活动</p>
-          </div>
-          <div className="tip-card">
-            <h4>📱 必备APP</h4>
-            <p>高德地图、大众点评<br/>
-               12306、支付宝<br/>
-               相机APP记录美好</p>
-          </div>
-          <div className="tip-card">
-            <h4>🎒 行李清单</h4>
-            <p>身份证、充电器<br/>
-               舒适的鞋子<br/>
-               少量现金和银行卡</p>
+        {/* 行程建议 */}
+        <div className="plan-tips mt-5">
+          <h3 className="text-center mb-4">🎯 行程建议</h3>
+          <div className="row g-4">
+            <div className="col-lg-3 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">⏰ 时间安排</h4>
+                  <p className="small text-muted">行程相对轻松，不会过于紧凑<br/>
+                     可根据实际情况调整时间<br/>
+                     重点是享受两人时光</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black" >🌤️ 天气准备</h4>
+                  <p className="small text-muted">查看天气预报<br/>
+                     准备合适的衣物<br/>
+                     雨天备选室内活动</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">📱 必备APP</h4>
+                  <p className="small text-muted">高德地图、大众点评<br/>
+                     12306、支付宝<br/>
+                     相机APP记录美好</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-md-6">
+              <div className="tip-card card h-100 border-0 shadow-sm">
+                <div className="card-body text-center">
+                  <h4 className="h6 mb-3 black">🎒 行李清单</h4>
+                  <p className="small text-muted">身份证、充电器<br/>
+                     舒适的鞋子<br/>
+                     少量现金和银行卡</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

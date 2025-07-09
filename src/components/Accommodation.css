@@ -364,7 +364,12 @@
 
 .tip-card h4 {
   margin: 0 0 1rem 0;
-  color: white;
+  color: #fff;
+}
+
+.tip-card h4.black {
+  margin: 0 0 1rem 0;
+  color: #000;
 }
 
 .tip-card p {

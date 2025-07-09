@@ -28,45 +28,65 @@ const Header = ({ activeSection, setActiveSection }) => {
 
   return (
     <header className="header">
-      <div className="header-container">
-        <div className="logo">
-          <h1>🎒 南京→徐州 周末游</h1>
-          <p>轻松愉快的双人旅行攻略</p>
+      <nav className="navbar navbar-expand-lg">
+        <div className="container-fluid px-3">
+          {/* Logo */}
+          <div className="navbar-brand logo">
+            <h1 className="mb-0">🎒 南京→徐州 周末游</h1>
+            <p className="mb-0 d-none d-md-block">轻松愉快的双人旅行攻略</p>
+          </div>
+
+          {/* 移动端菜单切换按钮 */}
+          <button
+            className="navbar-toggler border-0"
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-label="切换导航菜单"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          {/* 导航菜单 */}
+          <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`}>
+            {/* 全局搜索 */}
+            <div className="mx-auto d-none d-lg-block" style={{maxWidth: '400px', width: '100%'}}>
+              <GlobalSearch
+                onResultSelect={handleGlobalSearchResult}
+                setActiveSection={setActiveSection}
+              />
+            </div>
+
+            {/* 导航项 */}
+            <ul className="navbar-nav ms-auto">
+              {menuItems.map(item => (
+                <li key={item.id} className="nav-item">
+                  <button
+                    className={`nav-link btn btn-link text-decoration-none px-3 py-2 rounded-pill mx-1 ${
+                      activeSection === item.id ? 'active' : ''
+                    }`}
+                    onClick={() => {
+                      setActiveSection(item.id);
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <span className="nav-icon me-2">{item.icon}</span>
+                    <span className="nav-label">{item.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {/* 移动端搜索 */}
+            <div className="d-lg-none mt-3">
+              <GlobalSearch
+                onResultSelect={handleGlobalSearchResult}
+                setActiveSection={setActiveSection}
+              />
+            </div>
+          </div>
         </div>
-
-        {/* 全局搜索 */}
-        <div className="header-search">
-          <GlobalSearch
-            onResultSelect={handleGlobalSearchResult}
-            setActiveSection={setActiveSection}
-          />
-        </div>
-
-        <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item ${activeSection === item.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveSection(item.id);
-                setIsMenuOpen(false);
-              }}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button 
-          className="menu-toggle"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </div>
+      </nav>
     </header>
   );
 };

@@ -67,7 +67,7 @@ function App() {
   return (
     <div className="app">
       <Header activeSection={activeSection} setActiveSection={setActiveSection} />
-      <main className="main-content">
+      <main className="main-content container-fluid p-0">
         {renderContent()}
       </main>
     </div>
