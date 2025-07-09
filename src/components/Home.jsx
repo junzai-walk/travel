@@ -30,8 +30,8 @@ const Home = ({ setActiveSection }) => {
   ];
 
   const quickStats = [
-    { label: '旅行时长', value: '2天1夜', icon: '📅' },
-    { label: '预算参考', value: '¥930', icon: '💰' },
+    { label: '旅行时长', value: '2天2夜', icon: '📅' },
+    { label: '预算参考', value: '¥1543', icon: '💰' },
     { label: '交通方式', value: '高铁', icon: '🚄' },
     { label: '适合人群', value: '情侣', icon: '💕' }
   ];
