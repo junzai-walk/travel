@@ -990,7 +990,7 @@ const TravelPlan = () => {
                   {/* 添加新项目 */}
                   <div className="add-item-section mb-4">
                     <div className="row">
-                      <div className="col-md-8">
+                      <div className="col-md-8" style={{marginBottom: '0.5rem'}}>
                         <input
                           type="text"
                           value={newChecklistItem}
