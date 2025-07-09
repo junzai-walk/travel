@@ -105,6 +105,7 @@
 
 /* 富文本编辑工具栏样式 */
 .format-toolbar {
+  margin-top: 0.5rem;
   border: 1px solid #dee2e6;
   background-color: #f8f9fa !important;
 }

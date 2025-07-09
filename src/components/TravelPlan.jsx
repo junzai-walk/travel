@@ -694,6 +694,27 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'description' ? (
                             <div className="description-edit-container mb-3">
+                              <div
+                                contentEditable
+                                onInput={(e) => {
+                                  const html = e.target.innerHTML;
+                                  setEditingActivityValue(html);
+                                }}
+                                onKeyDown={handleActivityKeyPress}
+                                onMouseUp={handleTextSelection}
+                                onKeyUp={handleTextSelection}
+                                onSelect={handleTextSelection}
+                                className="form-control wysiwyg-editor"
+                                style={{
+                                  minHeight: '100px',
+                                  padding: '8px 12px',
+                                  border: '1px solid #ced4da',
+                                  borderRadius: '0.375rem',
+                                  outline: 'none'
+                                }}
+                                suppressContentEditableWarning={true}
+                                data-placeholder="活动描述（所见即所得编辑）"
+                              />
                               {/* 富文本编辑工具栏 */}
                               <div className="format-toolbar mb-2 p-2 bg-light rounded">
                                 <div className="d-flex gap-2 align-items-center">
@@ -721,27 +742,6 @@ const TravelPlan = () => {
                                   </div>
                                 </div>
                               </div>
-                              <div
-                                contentEditable
-                                onInput={(e) => {
-                                  const html = e.target.innerHTML;
-                                  setEditingActivityValue(html);
-                                }}
-                                onKeyDown={handleActivityKeyPress}
-                                onMouseUp={handleTextSelection}
-                                onKeyUp={handleTextSelection}
-                                onSelect={handleTextSelection}
-                                className="form-control wysiwyg-editor"
-                                style={{
-                                  minHeight: '100px',
-                                  padding: '8px 12px',
-                                  border: '1px solid #ced4da',
-                                  borderRadius: '0.375rem',
-                                  outline: 'none'
-                                }}
-                                suppressContentEditableWarning={true}
-                                data-placeholder="活动描述（所见即所得编辑）"
-                              />
                               <div className="d-flex gap-2 mt-2">
                                 <button
                                   className="btn btn-success btn-sm"
@@ -772,6 +772,27 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'tips' ? (
                             <div className="tips-edit-container">
+                              <div
+                                contentEditable
+                                onInput={(e) => {
+                                  const html = e.target.innerHTML;
+                                  setEditingActivityValue(html);
+                                }}
+                                onKeyDown={handleActivityKeyPress}
+                                onMouseUp={handleTextSelection}
+                                onKeyUp={handleTextSelection}
+                                onSelect={handleTextSelection}
+                                className="form-control wysiwyg-editor"
+                                style={{
+                                  minHeight: '80px',
+                                  padding: '8px 12px',
+                                  border: '1px solid #ced4da',
+                                  borderRadius: '0.375rem',
+                                  outline: 'none'
+                                }}
+                                suppressContentEditableWarning={true}
+                                data-placeholder="提示信息（所见即所得编辑）"
+                              />
                               {/* 富文本编辑工具栏 */}
                               <div className="format-toolbar mb-2 p-2 bg-light rounded">
                                 <div className="d-flex gap-2 align-items-center">
@@ -798,27 +819,6 @@ const TravelPlan = () => {
                                   </div>
                                 </div>
                               </div>
-                              <div
-                                contentEditable
-                                onInput={(e) => {
-                                  const html = e.target.innerHTML;
-                                  setEditingActivityValue(html);
-                                }}
-                                onKeyDown={handleActivityKeyPress}
-                                onMouseUp={handleTextSelection}
-                                onKeyUp={handleTextSelection}
-                                onSelect={handleTextSelection}
-                                className="form-control wysiwyg-editor"
-                                style={{
-                                  minHeight: '80px',
-                                  padding: '8px 12px',
-                                  border: '1px solid #ced4da',
-                                  borderRadius: '0.375rem',
-                                  outline: 'none'
-                                }}
-                                suppressContentEditableWarning={true}
-                                data-placeholder="提示信息（所见即所得编辑）"
-                              />
                               <div className="d-flex gap-2 mt-2">
                                 <button
                                   className="btn btn-success btn-sm"
