@@ -706,7 +706,7 @@ const TravelPlan = () => {
                                     <strong>B</strong>
                                   </button>
                                   <div className="color-picker d-flex gap-1">
-                                    <span className="small me-2">颜色:</span>
+                                    {/* <span className="small me-2">颜色:</span> */}
                                     {/* 红橙黄绿青蓝紫 */}
                                     {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
                                       <button
@@ -784,7 +784,7 @@ const TravelPlan = () => {
                                     <strong>B</strong>
                                   </button>
                                   <div className="color-picker d-flex gap-1">
-                                    <span className="small me-2">颜色:</span>
+                                    {/* <span className="small me-2">颜色:</span> */}
                                     {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
                                       <button
                                         key={color}
