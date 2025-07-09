@@ -4,9 +4,9 @@ import './TravelPlan.css';
 const TravelPlan = () => {
   // 默认预算数据
   const defaultBudgetData = [
-    { id: 'transport', category: '交通费', amount: 180, detail: '高铁往返 ¥89.5×2', editable: true },
-    { id: 'accommodation', category: '住宿费', amount: 300, detail: '一晚住宿（双人）', editable: true },
-    { id: 'food', category: '餐饮费', amount: 200, detail: '三餐+小吃（两人）', editable: true },
+    { id: 'transport', category: '交通费', amount: 495, detail: 'G2700高铁¥290+K347火车¥205', editable: true },
+    { id: 'accommodation', category: '住宿费', amount: 498, detail: '季末轻居酒店两晚 ¥249×2', editable: true },
+    { id: 'food', category: '餐饮费', amount: 300, detail: '三餐+小吃（两人）', editable: true },
     { id: 'tickets', category: '门票费', amount: 100, detail: '景点门票（两人）', editable: true },
     { id: 'localTransport', category: '市内交通', amount: 50, detail: '地铁+公交+打车', editable: true },
     { id: 'shopping', category: '购物费', amount: 100, detail: '特产+纪念品', editable: true }
@@ -115,39 +115,39 @@ const TravelPlan = () => {
   const itinerary = [
     {
       day: '周五',
-      date: '晚上',
+      date: '7月18日',
       title: '出发日 - 南京到徐州',
       activities: [
         {
-          time: '18:00',
+          time: '19:30',
           activity: '南京南站集合',
-          description: '提前30分钟到达，取票安检',
-          tips: '建议提前网上购票，避免排队',
+          description: '提前1小时到达，取票安检',
+          tips: 'G2700次高铁，建议提前网上购票',
           icon: '🚄'
         },
         {
-          time: '18:30',
-          activity: '乘坐高铁G1234',
-          description: '南京南 → 徐州东，约1小时20分钟',
+          time: '20:31',
+          activity: '乘坐高铁G2700',
+          description: '南京南 → 徐州东，约1小时34分钟',
           tips: '可以在车上休息，准备第二天的行程',
           icon: '🚄'
         },
         {
-          time: '19:50',
+          time: '22:05',
           activity: '到达徐州东站',
           description: '出站后乘坐地铁或打车前往酒店',
           tips: '地铁1号线可直达市区，约30分钟',
           icon: '🏨'
         },
         {
-          time: '20:30',
-          activity: '酒店入住',
+          time: '22:40',
+          activity: '季末轻居酒店入住',
           description: '办理入住手续，稍作休息',
-          tips: '可以先熟悉酒店周边环境',
+          tips: '酒店位于人民广场地铁站附近，交通便利',
           icon: '🛏️'
         },
         {
-          time: '21:00',
+          time: '23:00',
           activity: '附近觅食',
           description: '寻找附近的夜宵或小吃',
           tips: '可以尝试徐州烙馍或羊肉汤',
@@ -213,7 +213,7 @@ const TravelPlan = () => {
     },
     {
       day: '周日',
-      date: '上午',
+      date: '7月20日',
       title: '返程日 - 轻松游览',
       activities: [
         {
@@ -245,22 +245,22 @@ const TravelPlan = () => {
           icon: '🍜'
         },
         {
-          time: '13:30',
-          activity: '前往车站',
-          description: '取行李，前往徐州东站',
-          tips: '预留充足时间，避免匆忙',
+          time: '14:30',
+          activity: '前往徐州站',
+          description: '取行李，前往徐州站（注意是徐州站不是徐州东站）',
+          tips: '预留充足时间，K347次火车从徐州站发车',
           icon: '🚇'
         },
         {
-          time: '15:00',
-          activity: '返程高铁',
-          description: '乘坐高铁返回南京',
+          time: '15:38',
+          activity: '返程火车K347',
+          description: '徐州站 → 南京站，约4小时13分钟',
           tips: '可以在车上整理照片，回味旅程',
           icon: '🚄'
         },
         {
-          time: '16:30',
-          activity: '到达南京',
+          time: '19:51',
+          activity: '到达南京站',
           description: '愉快的徐州之旅结束',
           tips: '记得分享旅行的美好回忆',
           icon: '🏠'

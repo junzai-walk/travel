@@ -4,6 +4,21 @@ import './Accommodation.css';
 const Accommodation = () => {
   const hotels = [
     {
+      name: '季末轻居酒店(泉山区人民广场地铁站店)',
+      type: '精品商务酒店',
+      rating: 4.6,
+      price: '¥249/晚',
+      location: '泉山区',
+      distance: '人民广场地铁站步行2分钟',
+      features: ['地铁直达', '现代装修', '24小时前台', '免费WiFi'],
+      pros: ['地理位置优越', '交通极其便利', '性价比高', '服务贴心'],
+      cons: ['房间相对紧凑'],
+      suitable: '注重交通便利的旅客',
+      booking: '美团、携程、飞猪',
+      image: '🏨',
+      recommended: true
+    },
+    {
       name: '徐州苏宁凯悦酒店',
       type: '五星级酒店',
       rating: 4.8,
@@ -129,7 +144,12 @@ const Accommodation = () => {
         <h3>🏆 精选酒店推荐</h3>
         <div className="hotels-grid">
           {hotels.map((hotel, index) => (
-            <div key={index} className="hotel-card">
+            <div key={index} className={`hotel-card ${hotel.recommended ? 'recommended' : ''}`}>
+              {hotel.recommended && (
+                <div className="recommended-badge">
+                  ⭐ 本次推荐
+                </div>
+              )}
               <div className="hotel-header">
                 <div className="hotel-icon">{hotel.image}</div>
                 <div className="hotel-basic">

@@ -44,11 +44,31 @@
   padding: 1.5rem;
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
 }
 
 .hotel-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.hotel-card.recommended {
+  border: 2px solid #f39c12;
+  background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.recommended-badge {
+  position: absolute;
+  top: -10px;
+  right: 15px;
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3);
+  z-index: 10;
 }
 
 .hotel-header {
