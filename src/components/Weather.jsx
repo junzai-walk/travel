@@ -153,12 +153,12 @@ const Weather = () => {
       // 如果解析失败，返回默认数据
       return {
         temperature: 20,
-        feelsLike: 20,
+        feelsLike: '-',
         description: '天气信息暂时无法获取',
-        humidity: 60,
-        windSpeed: 2.0,
-        windDirection: 0,
-        visibility: 10,
+        humidity: '-',
+        windSpeed: '-',
+        windDirection: '-',
+        visibility: '-',
         icon: '01d',
         cityName: CITY_NAME
       };
