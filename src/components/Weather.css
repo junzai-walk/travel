@@ -1,0 +1,260 @@
+/* 天气组件样式 */
+.weather-widget {
+  max-width: 350px;
+  margin: 0 auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.weather-widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* 卡片头部样式 */
+.weather-widget .card-header.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.weather-widget .card-header h5 {
+  font-weight: 600;
+}
+
+.weather-widget .card-header .weather-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.weather-widget .card-header .btn-outline-light {
+  border-color: rgba(255,255,255,0.3);
+  color: white;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.weather-widget .card-header .btn-outline-light:hover {
+  background-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+}
+
+/* 加载状态样式 */
+.weather-loading {
+  padding: 2rem 1rem;
+}
+
+.weather-loading .spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* 错误状态样式 */
+.weather-error {
+  padding: 1.5rem 1rem;
+}
+
+.weather-error .error-icon {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* 主要天气信息样式 */
+.weather-main {
+  padding: 0.5rem 0;
+}
+
+.weather-icon-large {
+  flex-shrink: 0;
+}
+
+.weather-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.weather-temp-info {
+  flex: 1;
+}
+
+.temperature {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.weather-desc {
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  margin-bottom: 0.25rem;
+}
+
+.feels-like {
+  font-size: 0.875rem;
+}
+
+/* 详细天气信息样式 */
+.weather-details {
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.weather-detail-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  gap: 0.5rem;
+}
+
+.detail-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  flex: 1;
+}
+
+.detail-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 更新时间样式 */
+.weather-update-time {
+  border-top: 1px solid #e9ecef;
+  padding-top: 0.75rem;
+  margin-top: 1rem;
+}
+
+.weather-update-time small {
+  font-size: 0.75rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .weather-widget {
+    max-width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  .weather-main {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .weather-icon-large {
+    margin-bottom: 1rem;
+    margin-right: 0 !important;
+  }
+  
+  .temperature {
+    font-size: 2rem;
+  }
+  
+  .weather-details {
+    margin-top: 1.5rem;
+  }
+  
+  .weather-detail-item {
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .weather-detail-item:last-child {
+    border-bottom: none;
+  }
+  
+  .detail-label {
+    font-size: 0.9rem;
+  }
+  
+  .detail-value {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .weather-widget .card-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .weather-widget .card-header h5 {
+    font-size: 1rem;
+  }
+  
+  .weather-widget .card-body {
+    padding: 1rem;
+  }
+  
+  .temperature {
+    font-size: 1.8rem;
+  }
+  
+  .weather-desc {
+    font-size: 0.9rem;
+  }
+  
+  .feels-like {
+    font-size: 0.8rem;
+  }
+  
+  .weather-details {
+    padding: 0.75rem;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.weather-widget {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 刷新按钮动画 */
+.weather-widget .card-header .btn-outline-light:active {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+/* 天气图标动画 */
+.weather-img {
+  transition: transform 0.3s ease;
+}
+
+.weather-widget:hover .weather-img {
+  transform: scale(1.1);
+}
+
+/* 详细信息项悬停效果 */
+.weather-detail-item {
+  transition: background-color 0.2s ease;
+  border-radius: 0.25rem;
+  margin: 0.1rem 0;
+  padding: 0.5rem;
+}
+
+.weather-detail-item:hover {
+  background-color: rgba(255,255,255,0.7);
+}

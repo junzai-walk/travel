@@ -1,5 +1,6 @@
 import React from 'react';
 import './Home.css';
+import Weather from './Weather';
 
 const Home = ({ setActiveSection }) => {
   const highlights = [
@@ -127,6 +128,21 @@ const Home = ({ setActiveSection }) => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Weather Section */}
+      <section className="weather-section py-5">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-lg-4 col-md-6 col-sm-8">
+              <div className="text-center mb-4">
+                <h2 className="section-title">🌤️ 徐州天气</h2>
+                <p className="text-muted">实时天气信息，助您合理安排行程</p>
+              </div>
+              <Weather />
+            </div>
           </div>
         </div>
       </section>

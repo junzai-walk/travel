@@ -109,6 +109,17 @@
   font-weight: bold;
 }
 
+/* 天气部分样式 */
+.weather-section {
+  background: #f8f9fa;
+}
+
+.weather-section .section-title {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
   .hero .title-main {
@@ -129,6 +140,11 @@
 
   .line {
     width: 60px;
+  }
+
+  /* 天气部分移动端调整 */
+  .weather-section .section-title {
+    font-size: 1.5rem;
   }
 }
 
