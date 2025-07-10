@@ -8,6 +8,7 @@ import Transportation from './components/Transportation'
 import Food from './components/Food'
 import Accommodation from './components/Accommodation'
 import Map from './components/Map'
+import ApiTest from './components/ApiTest'
 
 function App() {
   const [activeSection, setActiveSection] = useState('home')
@@ -62,6 +63,8 @@ function App() {
         return <Accommodation />
       case 'map':
         return <Map />
+      case 'api-test':
+        return <ApiTest />
       default:
         return <Home setActiveSection={setActiveSection} />
     }

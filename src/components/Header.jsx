@@ -13,7 +13,8 @@ const Header = ({ activeSection, setActiveSection }) => {
     { id: 'transport', label: '交通指南', icon: '🚄' },
     { id: 'food', label: '美食', icon: '🍜' },
     { id: 'accommodation', label: '住宿', icon: '🏨' },
-    { id: 'map', label: '地图', icon: '🗺️' }
+    { id: 'map', label: '地图', icon: '🗺️' },
+    { id: 'api-test', label: 'API测试', icon: '🧪' }
   ];
 
   // 处理全局搜索结果选择
@@ -53,6 +54,7 @@ const Header = ({ activeSection, setActiveSection }) => {
             {/* 全局搜索 */}
             <div className="mx-auto d-none d-lg-block" style={{maxWidth: '400px', width: '100%'}}>
               <GlobalSearch
+                style={{display:'none'}}
                 onResultSelect={handleGlobalSearchResult}
                 setActiveSection={setActiveSection}
               />

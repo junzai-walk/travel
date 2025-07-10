@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './TravelPlan.css';
+import { itineraryService } from '../services/itineraryService.js';
+import { performMigration, needsMigration, getMigrationStatus } from '../services/dataMigration.js';
 
 const TravelPlan = () => {
   // 默认预算数据
@@ -37,6 +39,13 @@ const TravelPlan = () => {
   const [editingActivityValue, setEditingActivityValue] = useState('');
   const [itineraryData, setItineraryData] = useState([]);
 
+  // API相关状态
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [migrationStatus, setMigrationStatus] = useState(null);
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState({ message: '', progress: 0 });
+
   // 标题编辑相关状态
   const [editingTitle, setEditingTitle] = useState(null); // 格式: {dayIndex, field} field可以是'day', 'date', 'title'
   const [editingTitleValue, setEditingTitleValue] = useState('');
@@ -49,8 +58,94 @@ const TravelPlan = () => {
 
 
 
-  // 从localStorage加载数据
+  // 加载数据
   useEffect(() => {
+    loadAllData();
+  }, []);
+
+  // 检查网络连接
+  const checkConnection = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/health');
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // 加载所有数据
+  const loadAllData = async () => {
+    setIsLoading(true);
+    setApiError('');
+
+    try {
+      // 检查网络连接
+      const isConnected = await checkConnection();
+
+      if (!isConnected) {
+        setApiError('无法连接到服务器，使用本地数据');
+        loadLocalData();
+        loadBudgetData();
+        loadActualExpenseData();
+        return;
+      }
+
+      // 检查是否需要迁移
+      if (needsMigration()) {
+        setMigrationStatus(getMigrationStatus());
+        setShowMigrationDialog(true);
+        // 暂时加载本地数据
+        loadLocalData();
+      } else {
+        // 从API加载行程数据
+        await loadItineraryFromAPI();
+      }
+
+      // 加载其他数据（预算和支出仍使用localStorage）
+      loadBudgetData();
+      loadActualExpenseData();
+
+    } catch (error) {
+      console.error('加载数据失败:', error);
+      setApiError(error.message || '加载数据失败，使用本地数据');
+      // 回退到本地数据
+      loadLocalData();
+      loadBudgetData();
+      loadActualExpenseData();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 从API加载行程数据
+  const loadItineraryFromAPI = async () => {
+    try {
+      const data = await itineraryService.getAll();
+      setItineraryData(data.length > 0 ? data : getDefaultItinerary());
+    } catch (error) {
+      console.error('从API加载行程数据失败:', error);
+      throw error;
+    }
+  };
+
+  // 加载本地数据（备用方案）
+  const loadLocalData = () => {
+    const savedItinerary = localStorage.getItem('xuzhou-travel-itinerary');
+    if (savedItinerary) {
+      try {
+        const parsedItinerary = JSON.parse(savedItinerary);
+        setItineraryData(parsedItinerary);
+      } catch (error) {
+        console.error('Error loading local itinerary data:', error);
+        setItineraryData(getDefaultItinerary());
+      }
+    } else {
+      setItineraryData(getDefaultItinerary());
+    }
+  };
+
+  // 加载预算数据
+  const loadBudgetData = () => {
     const savedBudget = localStorage.getItem('xuzhou-travel-budget');
     if (savedBudget) {
       try {
@@ -60,22 +155,10 @@ const TravelPlan = () => {
         console.error('Error loading budget data:', error);
       }
     }
+  };
 
-    // 加载行程数据
-    const savedItinerary = localStorage.getItem('xuzhou-travel-itinerary');
-    if (savedItinerary) {
-      try {
-        const parsedItinerary = JSON.parse(savedItinerary);
-        setItineraryData(parsedItinerary);
-      } catch (error) {
-        console.error('Error loading itinerary data:', error);
-        setItineraryData(getDefaultItinerary());
-      }
-    } else {
-      setItineraryData(getDefaultItinerary());
-    }
-
-    // 加载实际消费数据
+  // 加载实际消费数据
+  const loadActualExpenseData = () => {
     const savedActualExpense = localStorage.getItem('xuzhou-travel-actual-expense');
     if (savedActualExpense) {
       try {
@@ -88,9 +171,7 @@ const TravelPlan = () => {
     } else {
       setActualExpenseData(getDefaultActualExpenseData());
     }
-
-
-  }, []);
+  };
 
 
 
@@ -358,12 +439,33 @@ const TravelPlan = () => {
     }
   };
 
-  // 保存行程数据到localStorage
-  const saveItineraryData = (newItineraryData) => {
-    localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
-    setItineraryData(newItineraryData);
-    setShowSaveMessage(true);
-    setTimeout(() => setShowSaveMessage(false), 2000);
+  // 保存行程数据到API
+  const saveItineraryData = async (newItineraryData) => {
+    try {
+      setIsLoading(true);
+      setApiError('');
+
+      // 如果还没有迁移，先保存到localStorage
+      if (needsMigration()) {
+        localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
+        setItineraryData(newItineraryData);
+      } else {
+        // 保存到API
+        await itineraryService.saveAll(newItineraryData);
+        setItineraryData(newItineraryData);
+      }
+
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 2000);
+    } catch (error) {
+      console.error('保存行程数据失败:', error);
+      setApiError(error.message || '保存失败');
+      // 回退到localStorage保存
+      localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
+      setItineraryData(newItineraryData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 开始编辑行程活动
@@ -390,7 +492,7 @@ const TravelPlan = () => {
   };
 
   // 保存行程活动编辑
-  const saveActivityEdit = () => {
+  const saveActivityEdit = async () => {
     if (!editingActivity) return;
 
     const { dayIndex, actIndex, field } = editingActivity;
@@ -405,7 +507,7 @@ const TravelPlan = () => {
     // 更新对应字段的值
     newItineraryData[dayIndex].activities[actIndex][field] = valueToSave;
 
-    saveItineraryData(newItineraryData);
+    await saveItineraryData(newItineraryData);
     setEditingActivity(null);
     setEditingActivityValue('');
     setIsSelectionBold(false);
@@ -758,13 +860,145 @@ const TravelPlan = () => {
     }
   ];
 
-  // 重置行程为默认数据
-  const resetItineraryToDefault = () => {
-    if (window.confirm('确定要重置为默认行程吗？这将清除您的所有自定义修改。')) {
-      localStorage.removeItem('xuzhou-travel-itinerary');
-      setItineraryData(getDefaultItinerary());
+  // 执行数据迁移
+  const handleMigration = async () => {
+    try {
+      setMigrationProgress({ message: '开始迁移...', progress: 0 });
+
+      const result = await performMigration((message, progress) => {
+        setMigrationProgress({ message, progress });
+      });
+
+      if (result.success) {
+        setShowMigrationDialog(false);
+        setMigrationStatus(null);
+        // 重新加载数据
+        await loadItineraryFromAPI();
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 3000);
+      } else {
+        setApiError(result.error || '迁移失败');
+      }
+    } catch (error) {
+      console.error('迁移过程出错:', error);
+      setApiError(error.message || '迁移失败');
+    }
+  };
+
+  // 跳过迁移
+  const skipMigration = () => {
+    setShowMigrationDialog(false);
+    setMigrationStatus(null);
+  };
+
+  // 新增活动
+  const addActivity = async (dayIndex) => {
+    try {
+      setIsLoading(true);
+      setApiError('');
+
+      const newActivity = {
+        time: '09:00',
+        activity: '新活动',
+        description: '请编辑活动描述',
+        tips: '请添加小贴士',
+        icon: '📍'
+      };
+
+      const newItineraryData = [...itineraryData];
+      newItineraryData[dayIndex].activities.push(newActivity);
+
+      await saveItineraryData(newItineraryData);
+
+      // 显示成功提示
       setShowSaveMessage(true);
       setTimeout(() => setShowSaveMessage(false), 2000);
+
+    } catch (error) {
+      console.error('添加活动失败:', error);
+      setApiError(error.message || '添加活动失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 删除活动
+  const deleteActivity = async (dayIndex, actIndex) => {
+    if (window.confirm('确定要删除这个活动吗？')) {
+      try {
+        setIsLoading(true);
+        setApiError('');
+
+        const newItineraryData = [...itineraryData];
+        const activity = newItineraryData[dayIndex].activities[actIndex];
+
+        // 如果活动有ID，需要从后端删除
+        if (activity.id && !needsMigration()) {
+          try {
+            await itineraryService.deleteActivity(activity.id);
+          } catch (error) {
+            console.error('删除活动失败:', error);
+            setApiError(error.message || '删除活动失败');
+            return;
+          }
+        }
+
+        newItineraryData[dayIndex].activities.splice(actIndex, 1);
+        await saveItineraryData(newItineraryData);
+
+        // 显示成功提示
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+
+      } catch (error) {
+        console.error('删除活动失败:', error);
+        setApiError(error.message || '删除活动失败');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // 重置行程为默认数据
+  const resetItineraryToDefault = async () => {
+    if (window.confirm('确定要重置为默认行程吗？这将清除您的所有自定义修改。')) {
+      try {
+        setIsLoading(true);
+
+        if (!needsMigration()) {
+          // 如果已迁移，需要清除后端数据
+          const response = await itineraryService.getAll(true); // 强制刷新
+          const currentData = response || [];
+
+          // 删除所有现有数据
+          for (const day of currentData) {
+            if (day.activities) {
+              for (const activity of day.activities) {
+                if (activity.id) {
+                  await itineraryService.deleteActivity(activity.id);
+                }
+              }
+            }
+          }
+        } else {
+          // 清除本地存储
+          localStorage.removeItem('xuzhou-travel-itinerary');
+        }
+
+        const defaultData = getDefaultItinerary();
+        await saveItineraryData(defaultData);
+
+      } catch (error) {
+        console.error('重置行程失败:', error);
+        setApiError(error.message || '重置失败');
+        // 回退到本地重置
+        localStorage.removeItem('xuzhou-travel-itinerary');
+        setItineraryData(getDefaultItinerary());
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -778,11 +1012,86 @@ const TravelPlan = () => {
           <p className="lead text-muted">轻松愉快的徐州周末游，两天一夜精华体验</p>
           <div className="mt-3">
             <small className="text-muted me-3">💡 点击任意内容可以编辑自定义行程</small>
-            <button className="btn btn-outline-primary btn-sm" onClick={resetItineraryToDefault}>
-              重置为默认行程
+            <button className="btn btn-outline-primary btn-sm" onClick={resetItineraryToDefault} disabled={isLoading}>
+              {isLoading ? '处理中...' : '重置为默认行程'}
             </button>
           </div>
+
+          {/* 加载状态 */}
+          {isLoading && (
+            <div className="alert alert-info mt-3">
+              <div className="d-flex align-items-center">
+                <div className="spinner-border spinner-border-sm me-2" role="status">
+                  <span className="visually-hidden">加载中...</span>
+                </div>
+                正在处理，请稍候...
+              </div>
+            </div>
+          )}
+
+          {/* 错误提示 */}
+          {apiError && (
+            <div className="alert alert-warning mt-3 alert-dismissible fade show">
+              <strong>提示：</strong> {apiError}
+              <button type="button" className="btn-close" onClick={() => setApiError('')}></button>
+            </div>
+          )}
+
+          {/* 成功提示 */}
+          {showSaveMessage && (
+            <div className="alert alert-success mt-3">
+              <i className="fas fa-check-circle me-2"></i>
+              保存成功！
+            </div>
+          )}
         </div>
+
+        {/* 数据迁移对话框 */}
+        {showMigrationDialog && (
+          <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">数据迁移</h5>
+                </div>
+                <div className="modal-body">
+                  <p>检测到您有本地保存的行程数据，是否要迁移到云端？</p>
+                  <p className="text-muted small">迁移后您的数据将保存在服务器上，可以在不同设备间同步。</p>
+
+                  {migrationProgress.progress > 0 && (
+                    <div className="mt-3">
+                      <div className="progress mb-2">
+                        <div
+                          className="progress-bar"
+                          style={{width: `${migrationProgress.progress}%`}}
+                        ></div>
+                      </div>
+                      <small className="text-muted">{migrationProgress.message}</small>
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={skipMigration}
+                    disabled={migrationProgress.progress > 0}
+                  >
+                    暂时跳过
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleMigration}
+                    disabled={migrationProgress.progress > 0}
+                  >
+                    {migrationProgress.progress > 0 ? '迁移中...' : '开始迁移'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="itinerary-container">
           {itineraryData.map((day, dayIndex) => (
@@ -1116,14 +1425,24 @@ const TravelPlan = () => {
                                 </div>
                               </div>
                             ) : (
-                              <h5
-                                className="mb-0 editable-field"
-                                style={{cursor: 'pointer'}}
-                                onClick={() => startEditingActivity(dayIndex, actIndex, 'activity', activity.activity)}
-                                title="点击编辑活动名称"
-                              >
-                                {activity.activity}
-                              </h5>
+                              <div className="d-flex align-items-center justify-content-between flex-grow-1">
+                                <h5
+                                  className="mb-0 editable-field"
+                                  style={{cursor: 'pointer'}}
+                                  onClick={() => startEditingActivity(dayIndex, actIndex, 'activity', activity.activity)}
+                                  title="点击编辑活动名称"
+                                >
+                                  {activity.activity}
+                                </h5>
+                                <button
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => deleteActivity(dayIndex, actIndex)}
+                                  title="删除此活动"
+                                  disabled={isLoading}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
                             )}
                           </div>
 
@@ -1287,6 +1606,26 @@ const TravelPlan = () => {
                     </div>
                   </div>
                 ))}
+
+                {/* 新增活动按钮 */}
+                <div className="row mb-4">
+                  <div className="col-md-2 col-3">
+                    <div className="text-center">
+                      <div className="timeline-dot mx-auto" style={{backgroundColor: '#28a745'}}></div>
+                    </div>
+                  </div>
+                  <div className="col-md-10 col-9">
+                    <button
+                      className="btn btn-outline-success w-100"
+                      onClick={() => addActivity(dayIndex)}
+                      disabled={isLoading}
+                      style={{borderStyle: 'dashed'}}
+                    >
+                      <i className="fas fa-plus me-2"></i>
+                      添加新活动
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
