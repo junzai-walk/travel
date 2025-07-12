@@ -15,21 +15,39 @@ const Checklist = () => {
     '医疗用品', '食物类', '护肤用品', '自定义'
   ];
 
-  // 从localStorage加载数据
+  // 从API加载数据
   useEffect(() => {
-    const savedChecklist = localStorage.getItem('xuzhou-travel-checklist');
-    if (savedChecklist) {
-      try {
-        const parsedChecklist = JSON.parse(savedChecklist);
-        setChecklistData(parsedChecklist);
-      } catch (error) {
-        console.error('Error loading checklist data:', error);
+    loadChecklistData();
+  }, []);
+
+  // 从API加载清单数据
+  const loadChecklistData = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/checklist');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data.items.length > 0) {
+          // 转换API数据格式为前端格式
+          const formattedData = result.data.items.map(item => ({
+            id: item.id,
+            item: item.item_name,
+            checked: item.is_completed,
+            category: item.category
+          }));
+          setChecklistData(formattedData);
+        } else {
+          // 如果没有数据，使用默认数据
+          setChecklistData(getDefaultChecklist());
+        }
+      } else {
+        console.error('Failed to load checklist data from API');
         setChecklistData(getDefaultChecklist());
       }
-    } else {
+    } catch (error) {
+      console.error('Error loading checklist data from API:', error);
       setChecklistData(getDefaultChecklist());
     }
-  }, []);
+  };
 
   // 获取默认必备清单数据
   const getDefaultChecklist = () => [
@@ -47,68 +65,174 @@ const Checklist = () => {
     { id: 12, item: '湿纸巾', checked: false, category: '生活用品' }
   ];
 
-  // 保存必备清单数据到localStorage
-  const saveChecklistData = (newChecklistData) => {
-    localStorage.setItem('xuzhou-travel-checklist', JSON.stringify(newChecklistData));
-    setChecklistData(newChecklistData);
+  // 显示保存消息
+  const showSaveMessageFunc = () => {
     setShowSaveMessage(true);
     setTimeout(() => setShowSaveMessage(false), 2000);
   };
 
   // 切换清单项目的勾选状态
-  const toggleChecklistItem = (itemId) => {
-    const newChecklistData = checklistData.map(item =>
-      item.id === itemId ? { ...item, checked: !item.checked } : item
-    );
-    saveChecklistData(newChecklistData);
+  const toggleChecklistItem = async (itemId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/checklist/${itemId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          // 更新本地状态
+          const newChecklistData = checklistData.map(item =>
+            item.id === itemId ? { ...item, checked: result.data.is_completed } : item
+          );
+          setChecklistData(newChecklistData);
+          showSaveMessageFunc();
+        }
+      } else {
+        console.error('Failed to toggle checklist item');
+      }
+    } catch (error) {
+      console.error('Error toggling checklist item:', error);
+    }
   };
 
   // 添加新的清单项目
-  const addChecklistItem = () => {
+  const addChecklistItem = async () => {
     if (newChecklistItem.trim() === '') return;
     if (newItemCategory === '') {
       alert('请选择物品分类');
       return;
     }
 
-    const newItem = {
-      id: Date.now(),
-      item: newChecklistItem.trim(),
-      checked: false,
-      category: newItemCategory
-    };
+    try {
+      const response = await fetch('http://localhost:3001/api/checklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          item_name: newChecklistItem.trim(),
+          category: newItemCategory,
+          priority: '中',
+          is_completed: false,
+          notes: ''
+        })
+      });
 
-    const newChecklistData = [...checklistData, newItem];
-    saveChecklistData(newChecklistData);
-    setNewChecklistItem('');
-    setNewItemCategory('');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          // 添加到本地状态
+          const newItem = {
+            id: result.data.id,
+            item: result.data.item_name,
+            checked: result.data.is_completed,
+            category: result.data.category
+          };
+          setChecklistData([...checklistData, newItem]);
+          setNewChecklistItem('');
+          setNewItemCategory('');
+          showSaveMessageFunc();
+        }
+      } else {
+        console.error('Failed to add checklist item');
+        alert('添加失败，请重试');
+      }
+    } catch (error) {
+      console.error('Error adding checklist item:', error);
+      alert('添加失败，请重试');
+    }
   };
 
   // 删除清单项目
-  const deleteChecklistItem = (itemId) => {
+  const deleteChecklistItem = async (itemId) => {
     if (window.confirm('确定要删除这个物品吗？')) {
-      const newChecklistData = checklistData.filter(item => item.id !== itemId);
-      saveChecklistData(newChecklistData);
+      try {
+        const response = await fetch(`http://localhost:3001/api/checklist/${itemId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.status === 'success') {
+            // 从本地状态中移除
+            const newChecklistData = checklistData.filter(item => item.id !== itemId);
+            setChecklistData(newChecklistData);
+            showSaveMessageFunc();
+          }
+        } else {
+          console.error('Failed to delete checklist item');
+          alert('删除失败，请重试');
+        }
+      } catch (error) {
+        console.error('Error deleting checklist item:', error);
+        alert('删除失败，请重试');
+      }
     }
   };
 
   // 编辑清单项目
-  const editChecklistItem = (itemId, newText) => {
+  const editChecklistItem = async (itemId, newText) => {
     if (newText.trim() === '') return;
-    const newChecklistData = checklistData.map(item =>
-      item.id === itemId ? { ...item, item: newText.trim() } : item
-    );
-    saveChecklistData(newChecklistData);
-    setEditingChecklistItem(null);
+
+    try {
+      const item = checklistData.find(item => item.id === itemId);
+      const response = await fetch(`http://localhost:3001/api/checklist/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          item_name: newText.trim(),
+          category: item.category,
+          priority: '中',
+          is_completed: item.checked,
+          notes: ''
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          // 更新本地状态
+          const newChecklistData = checklistData.map(item =>
+            item.id === itemId ? { ...item, item: newText.trim() } : item
+          );
+          setChecklistData(newChecklistData);
+          setEditingChecklistItem(null);
+          showSaveMessageFunc();
+        }
+      } else {
+        console.error('Failed to edit checklist item');
+        alert('编辑失败，请重试');
+      }
+    } catch (error) {
+      console.error('Error editing checklist item:', error);
+      alert('编辑失败，请重试');
+    }
   };
 
   // 重置必备清单为默认数据
-  const resetChecklistToDefault = () => {
+  const resetChecklistToDefault = async () => {
     if (window.confirm('确定要重置为默认清单吗？这将清除您的所有自定义修改。')) {
-      localStorage.removeItem('xuzhou-travel-checklist');
-      setChecklistData(getDefaultChecklist());
-      setShowSaveMessage(true);
-      setTimeout(() => setShowSaveMessage(false), 2000);
+      try {
+        // 首先删除所有现有数据
+        for (const item of checklistData) {
+          await fetch(`http://localhost:3001/api/checklist/${item.id}`, {
+            method: 'DELETE'
+          });
+        }
+
+        // 重新加载默认数据
+        await loadChecklistData();
+        showSaveMessageFunc();
+      } catch (error) {
+        console.error('Error resetting checklist:', error);
+        alert('重置失败，请重试');
+      }
     }
   };
 

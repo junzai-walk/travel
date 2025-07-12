@@ -50,6 +50,18 @@ export const errorHandler = (err, req, res, next) => {
     error = new AppError(message, 500);
   }
 
+  // Sequelize 数据库错误
+  if (err.name === 'SequelizeDatabaseError') {
+    const message = '数据库操作失败';
+    error = new AppError(message, 500);
+  }
+
+  // Sequelize 超时错误
+  if (err.name === 'SequelizeTimeoutError') {
+    const message = '数据库操作超时';
+    error = new AppError(message, 500);
+  }
+
   // JSON 解析错误
   if (err.type === 'entity.parse.failed') {
     const message = '请求数据格式错误';

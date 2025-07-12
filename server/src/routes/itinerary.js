@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 import { Itinerary } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -54,32 +54,31 @@ const itineraryValidation = [
 
 const idValidation = [
   param('id')
-    .isMongoId()
-    .withMessage('ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('ID必须是有效的正整数')
 ];
 
 // GET /api/itinerary - 获取所有行程安排
 router.get('/', catchAsync(async (req, res) => {
   const { date, status, page = 1, limit = 50 } = req.query;
-  
+
   // 构建查询条件
-  const filter = {};
-  if (date) filter.date = new Date(date);
-  if (status) filter.status = status;
+  const where = {};
+  if (date) where.date = date;
+  if (status) where.status = status;
 
   // 分页参数
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
-  const skip = (pageNum - 1) * limitNum;
+  const offset = (pageNum - 1) * limitNum;
 
-  const [total, items] = await Promise.all([
-    Itinerary.countDocuments(filter),
-    Itinerary.find(filter)
-      .sort({ date: 1, time: 1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()
-  ]);
+  // 获取总数和数据
+  const { count: total, rows: items } = await Itinerary.findAndCountAll({
+    where,
+    order: [['date', 'ASC'], ['time', 'ASC']],
+    limit: limitNum,
+    offset
+  });
 
   logger.info(`获取行程安排列表，共${total}条记录`);
 
@@ -101,9 +100,9 @@ router.get('/', catchAsync(async (req, res) => {
 // GET /api/itinerary/:id - 获取指定行程安排
 router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Itinerary.findById(id);
-  
+
+  const item = await Itinerary.findByPk(id);
+
   if (!item) {
     throw new AppError('行程安排不存在', 404);
   }
@@ -119,19 +118,19 @@ router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) =>
 
 // POST /api/itinerary - 创建新的行程安排
 router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, res) => {
-  const { 
-    date, 
-    time, 
-    activity, 
-    description, 
-    tips, 
-    location, 
-    duration, 
-    status = '计划中' 
+  const {
+    date,
+    time,
+    activity,
+    description,
+    tips,
+    location,
+    duration,
+    status = '计划中'
   } = req.body;
 
-  const newItem = new Itinerary({
-    date: new Date(date),
+  const newItem = await Itinerary.create({
+    date,
     time,
     activity,
     description,
@@ -141,9 +140,7 @@ router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, re
     status
   });
 
-  await newItem.save();
-
-  logger.info(`创建新行程安排，ID: ${newItem._id}, 活动: ${activity}`);
+  logger.info(`创建新行程安排，ID: ${newItem.id}, 活动: ${activity}`);
 
   res.status(201).json({
     status: 'success',
@@ -153,26 +150,25 @@ router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, re
 }));
 
 // PUT /api/itinerary/:id - 更新指定行程安排
-router.put('/:id', 
-  [...idValidation, ...itineraryValidation], 
-  validateRequest, 
+router.put('/:id',
+  [...idValidation, ...itineraryValidation],
+  validateRequest,
   catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { 
-      date, 
-      time, 
-      activity, 
-      description, 
-      tips, 
-      location, 
-      duration, 
-      status 
+    const {
+      date,
+      time,
+      activity,
+      description,
+      tips,
+      location,
+      duration,
+      status
     } = req.body;
 
-    const item = await Itinerary.findByIdAndUpdate(
-      id,
+    const [updatedRowsCount] = await Itinerary.update(
       {
-        date: new Date(date),
+        date,
         time,
         activity,
         description,
@@ -181,12 +177,17 @@ router.put('/:id',
         duration,
         status
       },
-      { new: true, runValidators: true }
+      {
+        where: { id },
+        returning: true
+      }
     );
-    
-    if (!item) {
+
+    if (updatedRowsCount === 0) {
       throw new AppError('行程安排不存在', 404);
     }
+
+    const item = await Itinerary.findByPk(id);
 
     logger.info(`更新行程安排，ID: ${id}, 活动: ${activity}`);
 
@@ -201,12 +202,16 @@ router.put('/:id',
 // DELETE /api/itinerary/:id - 删除指定行程安排
 router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Itinerary.findByIdAndDelete(id);
-  
+
+  const item = await Itinerary.findByPk(id);
+
   if (!item) {
     throw new AppError('行程安排不存在', 404);
   }
+
+  await Itinerary.destroy({
+    where: { id }
+  });
 
   logger.info(`删除行程安排，ID: ${id}, 活动: ${item.activity}`);
 
@@ -217,27 +222,28 @@ router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res)
 }));
 
 // PATCH /api/itinerary/:id/status - 更新行程状态
-router.patch('/:id/status', 
+router.patch('/:id/status',
   [
     ...idValidation,
     body('status')
       .isIn(['计划中', '进行中', '已完成', '已取消'])
       .withMessage('行程状态必须是有效的状态')
-  ], 
-  validateRequest, 
+  ],
+  validateRequest,
   catchAsync(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
-    
-    const item = await Itinerary.findByIdAndUpdate(
-      id,
+
+    const [updatedRowsCount] = await Itinerary.update(
       { status },
-      { new: true, runValidators: true }
+      { where: { id } }
     );
-    
-    if (!item) {
+
+    if (updatedRowsCount === 0) {
       throw new AppError('行程安排不存在', 404);
     }
+
+    const item = await Itinerary.findByPk(id);
 
     logger.info(`更新行程状态，ID: ${id}, 新状态: ${status}`);
 

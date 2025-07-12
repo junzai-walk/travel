@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import mongoose from 'mongoose';
+import { Op, fn, col } from 'sequelize';
 import { BudgetReference, Expenses } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -29,7 +29,7 @@ const budgetReferenceValidation = [
     .isFloat({ min: 0 })
     .withMessage('推荐预算金额不能为负数'),
   body('unit')
-    .isIn(['人/天', '人/次', '总计', '其他'])
+    .isIn(['元/人', '元/天', '元/次', '元/公里', '元/小时', '元'])
     .withMessage('计费单位必须是有效的单位'),
   body('description')
     .optional()
@@ -51,36 +51,76 @@ const budgetReferenceValidation = [
 
 const idValidation = [
   param('id')
-    .isMongoId()
-    .withMessage('ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('ID必须是有效的正整数')
 ];
+
+// GET /api/budget - 获取预算参考数据（默认路由）
+router.get('/', catchAsync(async (req, res) => {
+  const { category, is_essential, page = 1, limit = 50 } = req.query;
+
+  // 构建查询条件
+  const where = {};
+  if (category) where.category = category;
+  if (is_essential !== undefined) where.is_essential = is_essential === 'true';
+
+  // 分页参数
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const offset = (pageNum - 1) * limitNum;
+
+  // 获取总数和数据
+  const { count: total, rows: items } = await BudgetReference.findAndCountAll({
+    where,
+    order: [['category', 'ASC'], ['recommended_amount', 'DESC']],
+    limit: limitNum,
+    offset
+  });
+
+  logger.info(`获取预算参考列表，共${total}条记录`);
+
+  res.json({
+    status: 'success',
+    message: '获取预算参考列表成功',
+    data: {
+      items,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum)
+      }
+    }
+  });
+}));
 
 // GET /api/budget/reference - 获取预算参考数据
 router.get('/reference', catchAsync(async (req, res) => {
   const { category, is_essential, page = 1, limit = 50 } = req.query;
 
   // 构建查询条件
-  const filter = {};
-  if (category) filter.category = category;
-  if (is_essential !== undefined) filter.is_essential = is_essential === 'true';
+  const where = {};
+  if (category) where.category = category;
+  if (is_essential !== undefined) where.is_essential = is_essential === 'true';
 
   // 分页参数
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
-  const skip = (pageNum - 1) * limitNum;
+  const offset = (pageNum - 1) * limitNum;
 
-  const [total, items] = await Promise.all([
-    BudgetReference.countDocuments(filter),
-    BudgetReference.find(filter)
-      .sort({
-        category: 1,
-        is_essential: -1,
-        recommended_amount: 1
-      })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()
-  ]);
+  // 构建排序条件
+  const order = [
+    ['category', 'ASC'],
+    ['is_essential', 'DESC'],
+    ['recommended_amount', 'ASC']
+  ];
+
+  const { count: total, rows: items } = await BudgetReference.findAndCountAll({
+    where,
+    order,
+    limit: limitNum,
+    offset
+  });
 
   logger.info(`获取预算参考列表，共${total}条记录`);
 
@@ -103,7 +143,7 @@ router.get('/reference', catchAsync(async (req, res) => {
 router.get('/reference/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const item = await BudgetReference.findById(id);
+  const item = await BudgetReference.findByPk(id);
 
   if (!item) {
     throw new AppError('预算参考不存在', 404);
@@ -120,7 +160,7 @@ router.get('/reference/:id', idValidation, validateRequest, catchAsync(async (re
 
 // POST /api/budget/reference - 创建预算参考项目
 router.post('/reference', budgetReferenceValidation, validateRequest, catchAsync(async (req, res) => {
-  const { 
+  const {
     category,
     item_name,
     min_amount,
@@ -142,7 +182,7 @@ router.post('/reference', budgetReferenceValidation, validateRequest, catchAsync
     throw new AppError('推荐预算金额必须在最低和最高预算金额之间', 400);
   }
 
-  const newItem = new BudgetReference({
+  const newItem = await BudgetReference.create({
     category,
     item_name,
     min_amount,
@@ -155,9 +195,7 @@ router.post('/reference', budgetReferenceValidation, validateRequest, catchAsync
     is_essential
   });
 
-  await newItem.save();
-
-  logger.info(`创建新预算参考，ID: ${newItem._id}, 项目: ${item_name}`);
+  logger.info(`创建新预算参考，ID: ${newItem.id}, 项目: ${item_name}`);
 
   res.status(201).json({
     status: 'success',
@@ -194,8 +232,7 @@ router.put('/reference/:id',
       throw new AppError('推荐预算金额必须在最低和最高预算金额之间', 400);
     }
 
-    const item = await BudgetReference.findByIdAndUpdate(
-      id,
+    const [updatedRowsCount] = await BudgetReference.update(
       {
         category,
         item_name,
@@ -208,12 +245,17 @@ router.put('/reference/:id',
         season_factor,
         is_essential
       },
-      { new: true, runValidators: true }
+      {
+        where: { id },
+        returning: true
+      }
     );
 
-    if (!item) {
+    if (updatedRowsCount === 0) {
       throw new AppError('预算参考不存在', 404);
     }
+
+    const item = await BudgetReference.findByPk(id);
 
     logger.info(`更新预算参考，ID: ${id}, 项目: ${item_name}`);
 
@@ -229,13 +271,18 @@ router.put('/reference/:id',
 router.delete('/reference/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const item = await BudgetReference.findByIdAndDelete(id);
+  // 获取项目信息用于日志
+  const item = await BudgetReference.findByPk(id);
 
-  if (!item) {
+  const deletedRowsCount = await BudgetReference.destroy({
+    where: { id }
+  });
+
+  if (deletedRowsCount === 0) {
     throw new AppError('预算参考不存在', 404);
   }
 
-  logger.info(`删除预算参考，ID: ${id}, 项目: ${item.item_name}`);
+  logger.info(`删除预算参考，ID: ${id}, 项目: ${item ? item.item_name : '未知'}`);
 
   res.json({
     status: 'success',
@@ -248,65 +295,41 @@ router.get('/analysis', catchAsync(async (req, res) => {
   const { date_from, date_to } = req.query;
 
   // 构建日期查询条件
-  const expenseMatchStage = {};
+  const expenseWhere = {};
   if (date_from || date_to) {
-    expenseMatchStage.date = {};
-    if (date_from) expenseMatchStage.date.$gte = new Date(date_from);
-    if (date_to) expenseMatchStage.date.$lte = new Date(date_to);
+    expenseWhere.date = {};
+    if (date_from) expenseWhere.date[Op.gte] = new Date(date_from);
+    if (date_to) expenseWhere.date[Op.lte] = new Date(date_to);
   }
 
   // 获取预算参考数据（按分类汇总）
-  const budgetData = await BudgetReference.aggregate([
-    {
-      $group: {
-        _id: '$category',
-        total_budget: { $sum: '$recommended_amount' },
-        avg_budget: { $avg: '$recommended_amount' },
-        min_budget: { $min: '$min_amount' },
-        max_budget: { $max: '$max_amount' },
-        budget_items_count: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    },
-    {
-      $project: {
-        category: '$_id',
-        total_budget: { $round: ['$total_budget', 2] },
-        avg_budget: { $round: ['$avg_budget', 2] },
-        min_budget: { $round: ['$min_budget', 2] },
-        max_budget: { $round: ['$max_budget', 2] },
-        budget_items_count: 1,
-        _id: 0
-      }
-    }
-  ]);
+  const budgetData = await BudgetReference.findAll({
+    attributes: [
+      'category',
+      [fn('SUM', col('recommended_amount')), 'total_budget'],
+      [fn('AVG', col('recommended_amount')), 'avg_budget'],
+      [fn('MIN', col('min_amount')), 'min_budget'],
+      [fn('MAX', col('max_amount')), 'max_budget'],
+      [fn('COUNT', col('id')), 'budget_items_count']
+    ],
+    group: ['category'],
+    order: [['category', 'ASC']],
+    raw: true
+  });
 
   // 获取实际支出数据（按分类汇总）
-  const expenseData = await Expenses.aggregate([
-    ...(Object.keys(expenseMatchStage).length > 0 ? [{ $match: expenseMatchStage }] : []),
-    {
-      $group: {
-        _id: '$category',
-        total_expense: { $sum: '$amount' },
-        avg_expense: { $avg: '$amount' },
-        expense_items_count: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    },
-    {
-      $project: {
-        category: '$_id',
-        total_expense: { $round: ['$total_expense', 2] },
-        avg_expense: { $round: ['$avg_expense', 2] },
-        expense_items_count: 1,
-        _id: 0
-      }
-    }
-  ]);
+  const expenseData = await Expenses.findAll({
+    attributes: [
+      'category',
+      [fn('SUM', col('amount')), 'total_expense'],
+      [fn('AVG', col('amount')), 'avg_expense'],
+      [fn('COUNT', col('id')), 'expense_items_count']
+    ],
+    where: expenseWhere,
+    group: ['category'],
+    order: [['category', 'ASC']],
+    raw: true
+  });
 
   // 合并预算和实际支出数据
   const categories = ['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'];
@@ -314,8 +337,8 @@ router.get('/analysis', catchAsync(async (req, res) => {
     const budget = budgetData.find(item => item.category === category);
     const expense = expenseData.find(item => item.category === category);
 
-    const budgetAmount = budget ? budget.total_budget || 0 : 0;
-    const expenseAmount = expense ? expense.total_expense || 0 : 0;
+    const budgetAmount = budget ? parseFloat(budget.total_budget) || 0 : 0;
+    const expenseAmount = expense ? parseFloat(expense.total_expense) || 0 : 0;
     const variance = expenseAmount - budgetAmount;
     const variancePercent = budgetAmount > 0 ? ((variance / budgetAmount) * 100) : 0;
 
@@ -323,15 +346,15 @@ router.get('/analysis', catchAsync(async (req, res) => {
       category,
       budget: {
         total: budgetAmount,
-        average: budget ? budget.avg_budget || 0 : 0,
-        min: budget ? budget.min_budget || 0 : 0,
-        max: budget ? budget.max_budget || 0 : 0,
-        items_count: budget ? budget.budget_items_count || 0 : 0
+        average: budget ? parseFloat(budget.avg_budget) || 0 : 0,
+        min: budget ? parseFloat(budget.min_budget) || 0 : 0,
+        max: budget ? parseFloat(budget.max_budget) || 0 : 0,
+        items_count: budget ? parseInt(budget.budget_items_count) || 0 : 0
       },
       actual: {
         total: expenseAmount,
-        average: expense ? expense.avg_expense || 0 : 0,
-        items_count: expense ? expense.expense_items_count || 0 : 0
+        average: expense ? parseFloat(expense.avg_expense) || 0 : 0,
+        items_count: expense ? parseInt(expense.expense_items_count) || 0 : 0
       },
       variance: {
         amount: Math.round(variance * 100) / 100,
@@ -348,9 +371,9 @@ router.get('/analysis', catchAsync(async (req, res) => {
   const totalVariancePercent = totalBudget > 0 ? ((totalVariance / totalBudget) * 100) : 0;
 
   const summary = {
-    total_budget: totalBudget,
-    total_expense: totalExpense,
-    total_variance: totalVariance,
+    total_budget: Math.round(totalBudget * 100) / 100,
+    total_expense: Math.round(totalExpense * 100) / 100,
+    total_variance: Math.round(totalVariance * 100) / 100,
     total_variance_percent: Math.round(totalVariancePercent * 100) / 100,
     overall_status: totalVariance > 0 ? '超支' : totalVariance < 0 ? '节省' : '持平'
   };
@@ -373,35 +396,33 @@ router.get('/analysis', catchAsync(async (req, res) => {
 
 // GET /api/budget/stats/categories - 获取预算分类统计
 router.get('/stats/categories', catchAsync(async (req, res) => {
-  const stats = await BudgetReference.aggregate([
-    {
-      $group: {
-        _id: '$category',
-        count: { $sum: 1 },
-        avg_amount: { $avg: '$recommended_amount' },
-        total_amount: { $sum: '$recommended_amount' }
-      }
-    },
-    {
-      $sort: { total_amount: -1 }
-    },
-    {
-      $project: {
-        category: '$_id',
-        count: 1,
-        avg_amount: { $round: ['$avg_amount', 2] },
-        total_amount: { $round: ['$total_amount', 2] },
-        _id: 0
-      }
-    }
-  ]);
+
+  const stats = await BudgetReference.findAll({
+    attributes: [
+      'category',
+      [fn('COUNT', col('id')), 'count'],
+      [fn('AVG', col('recommended_amount')), 'avg_amount'],
+      [fn('SUM', col('recommended_amount')), 'total_amount']
+    ],
+    group: ['category'],
+    order: [[fn('SUM', col('recommended_amount')), 'DESC']],
+    raw: true
+  });
+
+  // 格式化数据
+  const formattedStats = stats.map(stat => ({
+    category: stat.category,
+    count: parseInt(stat.count),
+    avg_amount: Math.round(parseFloat(stat.avg_amount) * 100) / 100,
+    total_amount: Math.round(parseFloat(stat.total_amount) * 100) / 100
+  }));
 
   logger.info('获取预算分类统计');
 
   res.json({
     status: 'success',
     message: '获取预算分类统计成功',
-    data: stats
+    data: formattedStats
   });
 }));
 

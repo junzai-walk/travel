@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import mongoose from 'mongoose';
+import { Op, fn, col } from 'sequelize';
 import { Expenses, BudgetReference } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -55,8 +55,8 @@ const expensesValidation = [
 
 const idValidation = [
   param('id')
-    .isMongoId()
-    .withMessage('ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('ID必须是有效的正整数')
 ];
 
 // GET /api/expenses - 获取所有实际支出记录
@@ -72,32 +72,35 @@ router.get('/', catchAsync(async (req, res) => {
   } = req.query;
   
   // 构建查询条件
-  const filter = {};
-  if (category) filter.category = category;
-  if (payment_method) filter.payment_method = payment_method;
-  if (is_planned !== undefined) filter.is_planned = is_planned === 'true';
-  
+  const where = {};
+  if (category) where.category = category;
+  if (payment_method) where.payment_method = payment_method;
+  if (is_planned !== undefined) where.is_planned = is_planned === 'true';
+
   // 日期范围查询
   if (date_from || date_to) {
-    filter.date = {};
-    if (date_from) filter.date.$gte = new Date(date_from);
-    if (date_to) filter.date.$lte = new Date(date_to);
+    where.date = {};
+    if (date_from) where.date[Op.gte] = date_from;
+    if (date_to) where.date[Op.lte] = date_to;
   }
 
   // 分页参数
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
-  const skip = (pageNum - 1) * limitNum;
+  const offset = (pageNum - 1) * limitNum;
 
-  const [total, items] = await Promise.all([
-    Expenses.countDocuments(filter),
-    Expenses.find(filter)
-      .populate('budget_reference_id', 'item_name category recommended_amount')
-      .sort({ date: -1, time: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()
-  ]);
+  // 获取总数和数据
+  const { count: total, rows: items } = await Expenses.findAndCountAll({
+    where,
+    include: [{
+      model: BudgetReference,
+      as: 'budgetReference',
+      attributes: ['item_name', 'category', 'recommended_amount']
+    }],
+    order: [['date', 'DESC'], ['time', 'DESC'], ['created_at', 'DESC']],
+    limit: limitNum,
+    offset
+  });
 
   logger.info(`获取实际支出列表，共${total}条记录`);
 
@@ -105,10 +108,7 @@ router.get('/', catchAsync(async (req, res) => {
     status: 'success',
     message: '获取实际支出列表成功',
     data: {
-      items: items.map(item => ({
-        ...item,
-        budgetReference: item.budget_reference_id
-      })),
+      items,
       pagination: {
         total,
         page: pageNum,
@@ -122,23 +122,25 @@ router.get('/', catchAsync(async (req, res) => {
 // GET /api/expenses/:id - 获取指定支出记录
 router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Expenses.findById(id)
-    .populate('budget_reference_id', 'item_name category recommended_amount');
-  
+
+  const item = await Expenses.findByPk(id, {
+    include: [{
+      model: BudgetReference,
+      as: 'budgetReference',
+      attributes: ['item_name', 'category', 'recommended_amount']
+    }]
+  });
+
   if (!item) {
     throw new AppError('支出记录不存在', 404);
   }
 
   logger.info(`获取支出记录详情，ID: ${id}`);
 
-  const result = item.toObject();
-  result.budgetReference = result.budget_reference_id;
-
   res.json({
     status: 'success',
     message: '获取支出记录详情成功',
-    data: result
+    data: item
   });
 }));
 
@@ -160,17 +162,17 @@ router.post('/', expensesValidation, validateRequest, catchAsync(async (req, res
 
   // 验证预算参考ID是否存在
   if (budget_reference_id) {
-    const budgetRef = await BudgetReference.findById(budget_reference_id);
+    const budgetRef = await BudgetReference.findByPk(budget_reference_id);
     if (!budgetRef) {
       throw new AppError('关联的预算参考不存在', 400);
     }
   }
 
-  const newItem = new Expenses({
+  const newItem = await Expenses.create({
     category,
     amount,
     description,
-    date: new Date(date),
+    date,
     time,
     location,
     payment_method,
@@ -180,21 +182,12 @@ router.post('/', expensesValidation, validateRequest, catchAsync(async (req, res
     budget_reference_id
   });
 
-  await newItem.save();
-
-  // 获取完整的记录（包含关联数据）
-  const fullItem = await Expenses.findById(newItem._id)
-    .populate('budget_reference_id', 'item_name category recommended_amount');
-
-  logger.info(`创建新支出记录，ID: ${newItem._id}, 金额: ${amount}`);
-
-  const result = fullItem.toObject();
-  result.budgetReference = result.budget_reference_id;
+  logger.info(`创建新支出记录，ID: ${newItem.id}, 金额: ${amount}`);
 
   res.status(201).json({
     status: 'success',
     message: '创建支出记录成功',
-    data: result
+    data: newItem
   });
 }));
 
@@ -220,19 +213,18 @@ router.put('/:id',
 
     // 验证预算参考ID是否存在
     if (budget_reference_id) {
-      const budgetRef = await BudgetReference.findById(budget_reference_id);
+      const budgetRef = await BudgetReference.findByPk(budget_reference_id);
       if (!budgetRef) {
         throw new AppError('关联的预算参考不存在', 400);
       }
     }
 
-    const item = await Expenses.findByIdAndUpdate(
-      id,
+    const [updatedRowsCount] = await Expenses.update(
       {
         category,
         amount,
         description,
-        date: new Date(date),
+        date,
         time,
         location,
         payment_method,
@@ -241,22 +233,30 @@ router.put('/:id',
         is_planned,
         budget_reference_id
       },
-      { new: true, runValidators: true }
-    ).populate('budget_reference_id', 'item_name category recommended_amount');
-    
-    if (!item) {
+      {
+        where: { id },
+        returning: true
+      }
+    );
+
+    if (updatedRowsCount === 0) {
       throw new AppError('支出记录不存在', 404);
     }
 
-    logger.info(`更新支出记录，ID: ${id}, 金额: ${amount}`);
+    const item = await Expenses.findByPk(id, {
+      include: [{
+        model: BudgetReference,
+        as: 'budgetReference',
+        attributes: ['item_name', 'category', 'recommended_amount']
+      }]
+    });
 
-    const result = item.toObject();
-    result.budgetReference = result.budget_reference_id;
+    logger.info(`更新支出记录，ID: ${id}, 金额: ${amount}`);
 
     res.json({
       status: 'success',
       message: '更新支出记录成功',
-      data: result
+      data: item
     });
   })
 );
@@ -264,12 +264,16 @@ router.put('/:id',
 // DELETE /api/expenses/:id - 删除支出记录
 router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Expenses.findByIdAndDelete(id);
-  
+
+  const item = await Expenses.findByPk(id);
+
   if (!item) {
     throw new AppError('支出记录不存在', 404);
   }
+
+  await Expenses.destroy({
+    where: { id }
+  });
 
   logger.info(`删除支出记录，ID: ${id}, 描述: ${item.description}`);
 
@@ -282,45 +286,43 @@ router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res)
 // GET /api/expenses/stats/summary - 获取支出统计摘要
 router.get('/stats/summary', catchAsync(async (req, res) => {
   const { date_from, date_to } = req.query;
-  
+
   // 构建日期查询条件
-  const matchStage = {};
+  const where = {};
   if (date_from || date_to) {
-    matchStage.date = {};
-    if (date_from) matchStage.date.$gte = new Date(date_from);
-    if (date_to) matchStage.date.$lte = new Date(date_to);
+    where.date = {};
+    if (date_from) where.date[Op.gte] = date_from;
+    if (date_to) where.date[Op.lte] = date_to;
   }
 
-  const summary = await Expenses.aggregate([
-    ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
-    {
-      $group: {
-        _id: '$category',
-        count: { $sum: 1 },
-        total_amount: { $sum: '$amount' },
-        avg_amount: { $avg: '$amount' }
-      }
-    },
-    {
-      $sort: { total_amount: -1 }
-    },
-    {
-      $project: {
-        category: '$_id',
-        count: 1,
-        total_amount: { $round: ['$total_amount', 2] },
-        avg_amount: { $round: ['$avg_amount', 2] },
-        _id: 0
-      }
-    }
-  ]);
+  // 使用Sequelize的聚合查询
+  const summary = await Expenses.findAll({
+    attributes: [
+      'category',
+      [fn('COUNT', col('id')), 'count'],
+      [fn('SUM', col('amount')), 'total_amount'],
+      [fn('AVG', col('amount')), 'avg_amount']
+    ],
+    where,
+    group: ['category'],
+    order: [[fn('SUM', col('amount')), 'DESC']],
+    raw: true
+  });
+
+  // 格式化数据，保留两位小数
+  const formattedSummary = summary.map(item => ({
+    category: item.category,
+    count: parseInt(item.count),
+    total_amount: parseFloat(parseFloat(item.total_amount).toFixed(2)),
+    avg_amount: parseFloat(parseFloat(item.avg_amount).toFixed(2))
+  }));
 
   logger.info('获取支出统计摘要');
 
   res.json({
     status: 'success',
     message: '获取支出统计摘要成功',
-    data: summary
+    data: formattedSummary
   });
 }));
 

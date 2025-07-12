@@ -60,16 +60,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 错误处理中间件
-app.use(errorHandler);
-
-// 404 处理
-app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: '请求的接口不存在'
-  });
-});
+// 注意：错误处理中间件和404处理器将在路由注册后添加
 
 // 启动服务器
 async function startServer() {
@@ -79,30 +70,72 @@ async function startServer() {
       // 动态导入数据库配置
       const { connectDB } = await import('./config/database.js');
 
-      // 连接 MongoDB 数据库
+      // 连接 MySQL 数据库
       const connected = await connectDB();
       if (!connected) {
-        throw new Error('MongoDB 连接失败');
+        throw new Error('MySQL 数据库连接失败');
       }
-      logger.info('MongoDB 连接成功');
+      logger.info('MySQL 数据库连接成功');
+
+      // 导入所有模型以确保它们被注册到Sequelize
+      logger.info('加载数据模型...');
+      await import('./models/index.js');
+      logger.info('数据模型加载完成');
+
+      // 同步数据库表结构
+      const { syncDB } = await import('./config/database.js');
+      await syncDB();
+      logger.info('数据库表结构同步完成');
 
       // 动态导入并设置路由
+      logger.info('开始加载路由...');
+
       const { default: checklistRoutes } = await import('./routes/checklist.js');
+      logger.info('checklist 路由导入成功');
+
       const { default: itineraryRoutes } = await import('./routes/itinerary.js');
+      logger.info('itinerary 路由导入成功');
+
       const { default: activitiesRoutes } = await import('./routes/activities.js');
+      logger.info('activities 路由导入成功');
+
       const { default: budgetRoutes } = await import('./routes/budget.js');
+      logger.info('budget 路由导入成功');
+
       const { default: expensesRoutes } = await import('./routes/expenses.js');
+      logger.info('expenses 路由导入成功');
 
       app.use('/api/checklist', checklistRoutes);
-      app.use('/api/itinerary', itineraryRoutes);
-      app.use('/api/activities', activitiesRoutes);
-      app.use('/api/budget', budgetRoutes);
-      app.use('/api/expenses', expensesRoutes);
+      logger.info('checklist 路由注册成功');
 
-      logger.info('API 路由已加载');
+      app.use('/api/itinerary', itineraryRoutes);
+      logger.info('itinerary 路由注册成功');
+
+      app.use('/api/activities', activitiesRoutes);
+      logger.info('activities 路由注册成功');
+
+      app.use('/api/budget', budgetRoutes);
+      logger.info('budget 路由注册成功');
+
+      app.use('/api/expenses', expensesRoutes);
+      logger.info('expenses 路由注册成功');
+
+      logger.info('所有 API 路由已加载');
     } else {
       logger.info('测试模式：跳过数据库连接');
     }
+
+    // 在路由注册后添加错误处理中间件和404处理器
+    // 404 处理
+    app.use('*', (req, res) => {
+      res.status(404).json({
+        status: 'error',
+        message: '请求的接口不存在'
+      });
+    });
+
+    // 错误处理中间件
+    app.use(errorHandler);
 
     app.listen(PORT, () => {
       logger.info(`服务器运行在端口 ${PORT}`);
@@ -116,6 +149,9 @@ async function startServer() {
   } catch (error) {
     logger.error('服务器启动失败:', error);
     if (!isTestMode) {
+      console.error('❌ 服务器启动失败:', error.message);
+      console.log('💡 请确保 MySQL 服务正在运行');
+      console.log('💡 检查 MySQL 连接配置和权限设置');
       process.exit(1);
     } else {
       // 测试模式下即使数据库连接失败也继续启动

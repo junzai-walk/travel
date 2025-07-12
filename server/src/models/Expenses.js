@@ -1,141 +1,186 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-// 实际消费支出 Schema
-const expensesSchema = new mongoose.Schema({
+// 实际消费支出模型
+const Expenses = sequelize.define('Expenses', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    comment: '主键ID'
+  },
   category: {
-    type: String,
-    required: [true, '支出分类不能为空'],
-    enum: {
-      values: ['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'],
-      message: '支出分类必须是有效的分类'
-    }
+    type: DataTypes.ENUM('交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'),
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用']],
+        msg: '支出分类必须是有效的分类'
+      }
+    },
+    comment: '支出分类'
   },
   amount: {
-    type: Number,
-    required: [true, '支出金额不能为空'],
-    min: [0, '支出金额不能为负数'],
-    max: [999999.99, '支出金额不能超过999999.99元'],
+    type: DataTypes.DECIMAL(8, 2),
+    allowNull: false,
     validate: {
-      validator: function(value) {
-        // 验证小数点后最多2位
-        return /^\d+(\.\d{1,2})?$/.test(value.toString());
+      min: {
+        args: [0],
+        msg: '支出金额不能为负数'
       },
-      message: '支出金额最多保留2位小数'
-    }
+      max: {
+        args: [999999.99],
+        msg: '支出金额不能超过999999.99元'
+      }
+    },
+    comment: '支出金额'
   },
   description: {
-    type: String,
-    required: [true, '支出描述不能为空'],
-    trim: true,
-    maxlength: [300, '支出描述长度不能超过300字符'],
-    minlength: [1, '支出描述不能为空']
+    type: DataTypes.STRING(300),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: '支出描述不能为空'
+      },
+      len: {
+        args: [1, 300],
+        msg: '支出描述长度必须在1-300字符之间'
+      }
+    },
+    comment: '支出描述'
   },
   date: {
-    type: Date,
-    required: [true, '支出日期不能为空']
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: '支出日期不能为空'
+      },
+      isDate: {
+        msg: '请输入有效的日期格式'
+      }
+    },
+    comment: '支出日期'
   },
   time: {
-    type: String,
+    type: DataTypes.STRING(5),
+    allowNull: true,
     validate: {
-      validator: function(value) {
-        if (!value) return true; // 允许为空
-        // 验证时间格式 HH:MM
-        return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value);
-      },
-      message: '请输入有效的时间格式(HH:MM)'
-    }
+      is: {
+        args: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        msg: '请输入有效的时间格式(HH:MM)'
+      }
+    },
+    comment: '支出时间'
   },
   location: {
-    type: String,
-    trim: true,
-    maxlength: [200, '支出地点不能超过200字符']
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 200],
+        msg: '支出地点不能超过200字符'
+      }
+    },
+    comment: '支出地点'
   },
   payment_method: {
-    type: String,
-    required: true,
-    enum: {
-      values: ['现金', '支付宝', '微信支付', '银行卡', '信用卡', '其他'],
-      message: '支付方式必须是有效的方式'
+    type: DataTypes.ENUM('现金', '支付宝', '微信支付', '银行卡', '信用卡', '其他'),
+    allowNull: false,
+    defaultValue: '其他',
+    validate: {
+      isIn: {
+        args: [['现金', '支付宝', '微信支付', '银行卡', '信用卡', '其他']],
+        msg: '支付方式必须是有效的方式'
+      }
     },
-    default: '其他'
+    comment: '支付方式'
   },
   receipt_number: {
-    type: String,
-    trim: true,
-    maxlength: [100, '收据/发票号码不能超过100字符']
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 100],
+        msg: '收据/发票号码不能超过100字符'
+      }
+    },
+    comment: '收据/发票号码'
   },
   notes: {
-    type: String,
-    trim: true,
-    maxlength: [1000, '备注信息不能超过1000字符']
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 1000],
+        msg: '备注信息不能超过1000字符'
+      }
+    },
+    comment: '备注信息'
   },
   is_planned: {
-    type: Boolean,
-    required: true,
-    default: false
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: '是否计划内支出'
   },
   budget_reference_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'BudgetReference',
-    validate: {
-      validator: async function(value) {
-        if (!value) return true; // 允许为空
-        const BudgetReference = mongoose.model('BudgetReference');
-        const exists = await BudgetReference.findById(value);
-        return !!exists;
-      },
-      message: '关联的预算参考不存在'
-    }
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'budget_reference',
+      key: 'id'
+    },
+    comment: '关联的预算参考ID'
   }
 }, {
+  tableName: 'travel_expenses',
   timestamps: true,
-  collection: 'travel_expenses',
-  toJSON: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      // 格式化日期为 YYYY-MM-DD
-      if (ret.date) {
-        ret.date = ret.date.toISOString().split('T')[0];
-      }
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  charset: 'utf8mb4',
+  collate: 'utf8mb4_unicode_ci',
+  comment: '实际支出表',
+  indexes: [
+    {
+      name: 'idx_category',
+      fields: ['category']
+    },
+    {
+      name: 'idx_date',
+      fields: ['date']
+    },
+    {
+      name: 'idx_amount',
+      fields: ['amount']
+    },
+    {
+      name: 'idx_payment_method',
+      fields: ['payment_method']
+    },
+    {
+      name: 'idx_is_planned',
+      fields: ['is_planned']
+    },
+    {
+      name: 'idx_budget_reference_id',
+      fields: ['budget_reference_id']
+    },
+    {
+      name: 'idx_created_at',
+      fields: ['created_at']
     }
-  },
-  toObject: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      // 格式化日期为 YYYY-MM-DD
-      if (ret.date) {
-        ret.date = ret.date.toISOString().split('T')[0];
-      }
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
-    }
-  }
+  ]
 });
 
-// 创建索引
-expensesSchema.index({ category: 1 });
-expensesSchema.index({ date: -1 });
-expensesSchema.index({ amount: 1 });
-expensesSchema.index({ payment_method: 1 });
-expensesSchema.index({ is_planned: 1 });
-expensesSchema.index({ budget_reference_id: 1 });
-expensesSchema.index({ createdAt: -1 });
-
-// 创建模型
-export const Expenses = mongoose.model('Expenses', expensesSchema);
+// 添加实例方法
+Expenses.prototype.toJSON = function() {
+  const values = Object.assign({}, this.get());
+  // 格式化日期为 YYYY-MM-DD
+  if (values.date) {
+    values.date = values.date.toISOString().split('T')[0];
+  }
+  return values;
+};
 
 export default Expenses;

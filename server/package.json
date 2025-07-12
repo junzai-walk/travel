@@ -9,8 +9,7 @@
     "dev": "nodemon src/index.js",
     "test": "NODE_ENV=test node src/index.js",
     "test:win": "set NODE_ENV=test && node src/index.js",
-    "test-simple": "node src/test-server.js",
-    "test-mongo": "node src/mongo-test-server.js"
+    "test-simple": "node src/test-server.js"
   },
   "keywords": [
     "xuzhou",
@@ -25,8 +24,10 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
-    "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
+    "mysql2": "^3.14.2",
+    "node-fetch": "^2.7.0",
+    "sequelize": "^6.37.7",
     "winston": "^3.10.0"
   },
   "devDependencies": {

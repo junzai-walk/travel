@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import mongoose from 'mongoose';
 import { Checklist } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -34,8 +33,8 @@ const checklistValidation = [
 
 const idValidation = [
   param('id')
-    .isMongoId()
-    .withMessage('ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('ID必须是有效的正整数')
 ];
 
 // GET /api/checklist - 获取所有清单项目
@@ -43,28 +42,32 @@ router.get('/', catchAsync(async (req, res) => {
   const { category, is_completed, priority, page = 1, limit = 50 } = req.query;
 
   // 构建查询条件
-  const filter = {};
-  if (category) filter.category = category;
-  if (is_completed !== undefined) filter.is_completed = is_completed === 'true';
-  if (priority) filter.priority = priority;
+  const where = {};
+  if (category) where.category = category;
+  if (is_completed !== undefined) where.is_completed = is_completed === 'true';
+  if (priority) where.priority = priority;
 
   // 分页参数
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
-  const skip = (pageNum - 1) * limitNum;
+  const offset = (pageNum - 1) * limitNum;
+
+  // 构建排序条件
+  const order = [];
+  if (priority === '高') {
+    order.push(['priority', 'DESC']);
+  } else if (priority === '低') {
+    order.push(['priority', 'ASC']);
+  }
+  order.push(['created_at', 'DESC']);
 
   // 获取总数和数据
-  const [total, items] = await Promise.all([
-    Checklist.countDocuments(filter),
-    Checklist.find(filter)
-      .sort({
-        priority: priority === '高' ? -1 : priority === '低' ? 1 : 0,
-        createdAt: -1
-      })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()
-  ]);
+  const { count: total, rows: items } = await Checklist.findAndCountAll({
+    where,
+    order,
+    limit: limitNum,
+    offset
+  });
 
   logger.info(`获取清单项目列表，共${total}条记录`);
 
@@ -72,12 +75,7 @@ router.get('/', catchAsync(async (req, res) => {
     status: 'success',
     message: '获取清单项目列表成功',
     data: {
-      items: items.map(item => ({
-        ...item,
-        id: item._id,
-        created_at: item.createdAt,
-        updated_at: item.updatedAt
-      })),
+      items,
       pagination: {
         total,
         page: pageNum,
@@ -92,7 +90,7 @@ router.get('/', catchAsync(async (req, res) => {
 router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const item = await Checklist.findById(id);
+  const item = await Checklist.findByPk(id);
 
   if (!item) {
     throw new AppError('清单项目不存在', 404);
@@ -111,7 +109,7 @@ router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) =>
 router.post('/', checklistValidation, validateRequest, catchAsync(async (req, res) => {
   const { item_name, category, priority = '中', is_completed = false, notes } = req.body;
 
-  const newItem = new Checklist({
+  const newItem = await Checklist.create({
     item_name,
     category,
     priority,
@@ -119,9 +117,7 @@ router.post('/', checklistValidation, validateRequest, catchAsync(async (req, re
     notes
   });
 
-  await newItem.save();
-
-  logger.info(`创建新清单项目，ID: ${newItem._id}, 名称: ${item_name}`);
+  logger.info(`创建新清单项目，ID: ${newItem.id}, 名称: ${item_name}`);
 
   res.status(201).json({
     status: 'success',
@@ -138,8 +134,7 @@ router.put('/:id',
     const { id } = req.params;
     const { item_name, category, priority, is_completed, notes } = req.body;
 
-    const item = await Checklist.findByIdAndUpdate(
-      id,
+    const [updatedRowsCount] = await Checklist.update(
       {
         item_name,
         category,
@@ -147,12 +142,17 @@ router.put('/:id',
         is_completed,
         notes
       },
-      { new: true, runValidators: true }
+      {
+        where: { id },
+        returning: true
+      }
     );
 
-    if (!item) {
+    if (updatedRowsCount === 0) {
       throw new AppError('清单项目不存在', 404);
     }
+
+    const item = await Checklist.findByPk(id);
 
     logger.info(`更新清单项目，ID: ${id}, 名称: ${item_name}`);
 
@@ -168,13 +168,17 @@ router.put('/:id',
 router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const item = await Checklist.findByIdAndDelete(id);
+  const deletedRowsCount = await Checklist.destroy({
+    where: { id }
+  });
 
-  if (!item) {
+  if (deletedRowsCount === 0) {
     throw new AppError('清单项目不存在', 404);
   }
 
-  logger.info(`删除清单项目，ID: ${id}, 名称: ${item.item_name}`);
+  // 获取项目名称用于日志记录
+  const item = await Checklist.findByPk(id);
+  logger.info(`删除清单项目，ID: ${id}, 名称: ${item ? item.item_name : '未知'}`);
 
   res.json({
     status: 'success',
@@ -186,21 +190,28 @@ router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res)
 router.patch('/:id/toggle', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const item = await Checklist.findById(id);
+  const item = await Checklist.findByPk(id);
 
   if (!item) {
     throw new AppError('清单项目不存在', 404);
   }
 
-  item.is_completed = !item.is_completed;
-  await item.save();
+  const newStatus = !item.is_completed;
 
-  logger.info(`切换清单项目完成状态，ID: ${id}, 新状态: ${item.is_completed}`);
+  await Checklist.update(
+    { is_completed: newStatus },
+    { where: { id } }
+  );
+
+  // 重新获取更新后的数据
+  const updatedItem = await Checklist.findByPk(id);
+
+  logger.info(`切换清单项目完成状态，ID: ${id}, 新状态: ${newStatus}`);
 
   res.json({
     status: 'success',
     message: '切换完成状态成功',
-    data: item
+    data: updatedItem
   });
 }));
 

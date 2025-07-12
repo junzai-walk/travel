@@ -1,80 +1,101 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-// 出行清单 Schema
-const checklistSchema = new mongoose.Schema({
+// 出行清单模型
+const Checklist = sequelize.define('Checklist', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    comment: '主键ID'
+  },
   item_name: {
-    type: String,
-    required: [true, '清单项目名称不能为空'],
-    trim: true,
-    maxlength: [200, '清单项目名称长度不能超过200字符'],
-    minlength: [1, '清单项目名称不能为空']
+    type: DataTypes.STRING(200),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: '清单项目名称不能为空'
+      },
+      len: {
+        args: [1, 200],
+        msg: '清单项目名称长度必须在1-200字符之间'
+      }
+    },
+    comment: '清单项目名称'
   },
   category: {
-    type: String,
-    required: true,
-    enum: {
-      values: ['证件类', '衣物类', '电子设备', '洗护用品', '药品类', '其他'],
-      message: '清单项目分类必须是有效的分类'
+    type: DataTypes.ENUM('证件类', '衣物类', '电子设备', '洗护用品', '药品类', '其他'),
+    allowNull: false,
+    defaultValue: '其他',
+    validate: {
+      isIn: {
+        args: [['证件类', '衣物类', '电子设备', '洗护用品', '药品类', '其他']],
+        msg: '清单项目分类必须是有效的分类'
+      }
     },
-    default: '其他'
+    comment: '清单项目分类'
   },
   is_completed: {
-    type: Boolean,
-    required: true,
-    default: false
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: '是否已完成'
   },
   priority: {
-    type: String,
-    required: true,
-    enum: {
-      values: ['高', '中', '低'],
-      message: '优先级必须是高、中、低之一'
+    type: DataTypes.ENUM('高', '中', '低'),
+    allowNull: false,
+    defaultValue: '中',
+    validate: {
+      isIn: {
+        args: [['高', '中', '低']],
+        msg: '优先级必须是高、中、低之一'
+      }
     },
-    default: '中'
+    comment: '优先级'
   },
   notes: {
-    type: String,
-    trim: true,
-    maxlength: [1000, '备注信息不能超过1000字符']
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 1000],
+        msg: '备注信息不能超过1000字符'
+      }
+    },
+    comment: '备注信息'
   }
 }, {
+  tableName: 'travel_checklist',
   timestamps: true,
-  collection: 'travel_checklist',
-  toJSON: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  charset: 'utf8mb4',
+  collate: 'utf8mb4_unicode_ci',
+  comment: '出行清单表',
+  indexes: [
+    {
+      name: 'idx_category',
+      fields: ['category']
+    },
+    {
+      name: 'idx_is_completed',
+      fields: ['is_completed']
+    },
+    {
+      name: 'idx_priority',
+      fields: ['priority']
+    },
+    {
+      name: 'idx_created_at',
+      fields: ['created_at']
     }
-  },
-  toObject: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
-    }
-  }
+  ]
 });
 
-// 创建索引
-checklistSchema.index({ category: 1 });
-checklistSchema.index({ is_completed: 1 });
-checklistSchema.index({ priority: 1 });
-checklistSchema.index({ createdAt: -1 });
-
-// 创建模型
-export const Checklist = mongoose.model('Checklist', checklistSchema);
+// 添加实例方法
+Checklist.prototype.toJSON = function() {
+  const values = Object.assign({}, this.get());
+  return values;
+};
 
 export default Checklist;

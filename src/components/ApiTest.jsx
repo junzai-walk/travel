@@ -195,11 +195,8 @@ const ApiTest = () => {
             <h5>📝 测试说明</h5>
             <ul className="list-unstyled">
               <li>• 确保后端服务器运行在 http://localhost:3001</li>
-              <li>• 确保 MongoDB 服务正在运行 (mongodb://localhost:27017)</li>
               <li>• 绿色表示 API 接口连接成功</li>
               <li>• 红色表示 API 接口连接失败</li>
-              <li>• 项目已从 MySQL 迁移到 MongoDB</li>
-              <li>• 使用 <code>npm run test-mongo</code> 启动 MongoDB 测试服务器</li>
             </ul>
           </div>
         </div>

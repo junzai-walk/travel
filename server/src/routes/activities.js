@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 import { Activities } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -58,45 +58,50 @@ const activitiesValidation = [
 
 const idValidation = [
   param('id')
-    .isMongoId()
-    .withMessage('ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('ID必须是有效的正整数')
 ];
 
 // GET /api/activities - 获取所有活动规划
 router.get('/', catchAsync(async (req, res) => {
   const { category, priority, page = 1, limit = 50, search } = req.query;
-  
+
   // 构建查询条件
-  const filter = {};
-  if (category) filter.category = category;
-  if (priority) filter.priority = priority;
-  
+  const where = {};
+  if (category) where.category = category;
+  if (priority) where.priority = priority;
+
   // 搜索功能
   if (search) {
-    filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-      { location: { $regex: search, $options: 'i' } }
+    where[Op.or] = [
+      { title: { [Op.like]: `%${search}%` } },
+      { description: { [Op.like]: `%${search}%` } },
+      { location: { [Op.like]: `%${search}%` } }
     ];
   }
 
   // 分页参数
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
-  const skip = (pageNum - 1) * limitNum;
+  const offset = (pageNum - 1) * limitNum;
 
-  const [total, items] = await Promise.all([
-    Activities.countDocuments(filter),
-    Activities.find(filter)
-      .sort({ 
-        priority: priority === '必去' ? -1 : priority === '可选' ? 1 : 0,
-        estimated_cost: 1,
-        createdAt: -1 
-      })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()
-  ]);
+  // 构建排序条件
+  const order = [];
+  if (priority === '必去') {
+    order.push(['priority', 'DESC']);
+  } else if (priority === '可选') {
+    order.push(['priority', 'ASC']);
+  }
+  order.push(['estimated_cost', 'ASC']);
+  order.push(['created_at', 'DESC']);
+
+  // 获取总数和数据
+  const { count: total, rows: items } = await Activities.findAndCountAll({
+    where,
+    order,
+    limit: limitNum,
+    offset
+  });
 
   logger.info(`获取活动规划列表，共${total}条记录`);
 
@@ -118,9 +123,9 @@ router.get('/', catchAsync(async (req, res) => {
 // GET /api/activities/:id - 获取指定活动规划
 router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Activities.findById(id);
-  
+
+  const item = await Activities.findByPk(id);
+
   if (!item) {
     throw new AppError('活动规划不存在', 404);
   }
@@ -136,7 +141,7 @@ router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) =>
 
 // POST /api/activities - 创建新的活动规划
 router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, res) => {
-  const { 
+  const {
     title,
     category,
     description,
@@ -150,7 +155,7 @@ router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, r
     opening_hours
   } = req.body;
 
-  const newItem = new Activities({
+  const newItem = await Activities.create({
     title,
     category,
     description,
@@ -164,9 +169,7 @@ router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, r
     opening_hours
   });
 
-  await newItem.save();
-
-  logger.info(`创建新活动规划，ID: ${newItem._id}, 标题: ${title}`);
+  logger.info(`创建新活动规划，ID: ${newItem.id}, 标题: ${title}`);
 
   res.status(201).json({
     status: 'success',
@@ -176,12 +179,12 @@ router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, r
 }));
 
 // PUT /api/activities/:id - 更新指定活动规划
-router.put('/:id', 
-  [...idValidation, ...activitiesValidation], 
-  validateRequest, 
+router.put('/:id',
+  [...idValidation, ...activitiesValidation],
+  validateRequest,
   catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { 
+    const {
       title,
       category,
       description,
@@ -195,8 +198,7 @@ router.put('/:id',
       opening_hours
     } = req.body;
 
-    const item = await Activities.findByIdAndUpdate(
-      id,
+    const [updatedRowsCount] = await Activities.update(
       {
         title,
         category,
@@ -210,12 +212,17 @@ router.put('/:id',
         contact_info,
         opening_hours
       },
-      { new: true, runValidators: true }
+      {
+        where: { id },
+        returning: true
+      }
     );
-    
-    if (!item) {
+
+    if (updatedRowsCount === 0) {
       throw new AppError('活动规划不存在', 404);
     }
+
+    const item = await Activities.findByPk(id);
 
     logger.info(`更新活动规划，ID: ${id}, 标题: ${title}`);
 
@@ -230,12 +237,16 @@ router.put('/:id',
 // DELETE /api/activities/:id - 删除指定活动规划
 router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res) => {
   const { id } = req.params;
-  
-  const item = await Activities.findByIdAndDelete(id);
-  
+
+  const item = await Activities.findByPk(id);
+
   if (!item) {
     throw new AppError('活动规划不存在', 404);
   }
+
+  await Activities.destroy({
+    where: { id }
+  });
 
   logger.info(`删除活动规划，ID: ${id}, 标题: ${item.title}`);
 

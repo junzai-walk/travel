@@ -1,116 +1,172 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-// 行程安排 Schema
-const itinerarySchema = new mongoose.Schema({
+// 行程安排模型
+const Itinerary = sequelize.define('Itinerary', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    comment: '主键ID'
+  },
   date: {
-    type: Date,
-    required: [true, '行程日期不能为空'],
+    type: DataTypes.DATEONLY,
+    allowNull: false,
     validate: {
-      validator: function(value) {
-        // 允许今天及以后的日期
+      notEmpty: {
+        msg: '行程日期不能为空'
+      },
+      isDate: {
+        msg: '请输入有效的日期格式'
+      },
+      isAfterToday(value) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        return value >= today;
-      },
-      message: '行程日期不能早于今天'
-    }
+        if (new Date(value) < today) {
+          throw new Error('行程日期不能早于今天');
+        }
+      }
+    },
+    comment: '行程日期'
   },
   time: {
-    type: String,
-    required: [true, '行程时间不能为空'],
+    type: DataTypes.STRING(5),
+    allowNull: false,
     validate: {
-      validator: function(value) {
-        // 验证时间格式 HH:MM
-        return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+      notEmpty: {
+        msg: '行程时间不能为空'
       },
-      message: '请输入有效的时间格式(HH:MM)'
-    }
+      is: {
+        args: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        msg: '请输入有效的时间格式(HH:MM)'
+      }
+    },
+    comment: '行程时间'
   },
   activity: {
-    type: String,
-    required: [true, '活动内容不能为空'],
-    trim: true,
-    maxlength: [300, '活动内容长度不能超过300字符'],
-    minlength: [1, '活动内容不能为空']
+    type: DataTypes.STRING(300),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: '活动内容不能为空'
+      },
+      len: {
+        args: [1, 300],
+        msg: '活动内容长度必须在1-300字符之间'
+      }
+    },
+    comment: '活动内容'
   },
   description: {
-    type: String,
-    trim: true,
-    maxlength: [2000, '详细描述不能超过2000字符']
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 2000],
+        msg: '详细描述不能超过2000字符'
+      }
+    },
+    comment: '详细描述'
   },
   tips: {
-    type: String,
-    trim: true,
-    maxlength: [2000, '贴心提示不能超过2000字符']
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 2000],
+        msg: '贴心提示不能超过2000字符'
+      }
+    },
+    comment: '贴心提示'
   },
   location: {
-    type: String,
-    trim: true,
-    maxlength: [200, '地点位置不能超过200字符']
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    validate: {
+      len: {
+        args: [0, 200],
+        msg: '地点位置不能超过200字符'
+      }
+    },
+    comment: '地点位置'
   },
   duration: {
-    type: Number,
-    min: [1, '预计时长必须大于0分钟'],
+    type: DataTypes.INTEGER,
+    allowNull: true,
     validate: {
-      validator: Number.isInteger,
-      message: '预计时长必须是整数'
-    }
+      min: {
+        args: [1],
+        msg: '预计时长必须大于0分钟'
+      },
+      isInt: {
+        msg: '预计时长必须是整数'
+      }
+    },
+    comment: '预计时长（分钟）'
   },
   status: {
-    type: String,
-    required: true,
-    enum: {
-      values: ['计划中', '进行中', '已完成', '已取消'],
-      message: '行程状态必须是有效的状态'
+    type: DataTypes.ENUM('计划中', '进行中', '已完成', '已取消'),
+    allowNull: false,
+    defaultValue: '计划中',
+    validate: {
+      isIn: {
+        args: [['计划中', '进行中', '已完成', '已取消']],
+        msg: '行程状态必须是有效的状态'
+      }
     },
-    default: '计划中'
+    comment: '行程状态'
   }
 }, {
+  tableName: 'travel_itinerary',
   timestamps: true,
-  collection: 'travel_itinerary',
-  toJSON: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      // 格式化日期为 YYYY-MM-DD
-      if (ret.date) {
-        ret.date = ret.date.toISOString().split('T')[0];
-      }
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  charset: 'utf8mb4',
+  collate: 'utf8mb4_unicode_ci',
+  comment: '行程安排表',
+  indexes: [
+    {
+      name: 'idx_date',
+      fields: ['date']
+    },
+    {
+      name: 'idx_status',
+      fields: ['status']
+    },
+    {
+      name: 'idx_date_time',
+      fields: ['date', 'time']
+    },
+    {
+      name: 'idx_created_at',
+      fields: ['created_at']
     }
-  },
-  toObject: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.id = ret._id;
-      ret.created_at = ret.createdAt;
-      ret.updated_at = ret.updatedAt;
-      // 格式化日期为 YYYY-MM-DD
-      if (ret.date) {
-        ret.date = ret.date.toISOString().split('T')[0];
-      }
-      delete ret._id;
-      delete ret.__v;
-      delete ret.createdAt;
-      delete ret.updatedAt;
-      return ret;
-    }
-  }
+  ]
 });
 
-// 创建索引
-itinerarySchema.index({ date: 1 });
-itinerarySchema.index({ status: 1 });
-itinerarySchema.index({ date: 1, time: 1 });
-itinerarySchema.index({ createdAt: -1 });
-
-// 创建模型
-export const Itinerary = mongoose.model('Itinerary', itinerarySchema);
+// 添加实例方法
+Itinerary.prototype.toJSON = function() {
+  const values = Object.assign({}, this.get());
+  // 格式化日期为 YYYY-MM-DD
+  if (values.date) {
+    // 检查是否已经是Date对象，如果不是则转换
+    if (values.date instanceof Date) {
+      values.date = values.date.toISOString().split('T')[0];
+    } else if (typeof values.date === 'string') {
+      // 如果是字符串，尝试解析为Date对象再格式化
+      try {
+        const dateObj = new Date(values.date);
+        if (!isNaN(dateObj.getTime())) {
+          values.date = dateObj.toISOString().split('T')[0];
+        }
+        // 如果已经是YYYY-MM-DD格式，保持不变
+      } catch (error) {
+        // 如果转换失败，保持原值
+        console.warn('日期格式转换失败:', values.date, error);
+      }
+    }
+  }
+  return values;
+};
 
 export default Itinerary;

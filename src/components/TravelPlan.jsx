@@ -101,9 +101,9 @@ const TravelPlan = () => {
         await loadItineraryFromAPI();
       }
 
-      // 加载其他数据（预算和支出仍使用localStorage）
-      loadBudgetData();
-      loadActualExpenseData();
+      // 加载其他数据
+      await loadBudgetDataFromAPI();
+      await loadActualExpenseDataFromAPI();
 
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -144,7 +144,36 @@ const TravelPlan = () => {
     }
   };
 
-  // 加载预算数据
+  // 从API加载预算数据
+  const loadBudgetDataFromAPI = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/budget');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data.items.length > 0) {
+          // 转换API数据格式为前端格式
+          const formattedData = result.data.items.map(item => ({
+            id: item.id,
+            category: item.category,
+            amount: item.recommended_amount,
+            detail: item.description,
+            editable: true
+          }));
+          setBudgetData(formattedData);
+        } else {
+          setBudgetData(defaultBudgetData);
+        }
+      } else {
+        console.error('Failed to load budget data from API');
+        loadBudgetData(); // 回退到本地数据
+      }
+    } catch (error) {
+      console.error('Error loading budget data from API:', error);
+      loadBudgetData(); // 回退到本地数据
+    }
+  };
+
+  // 加载预算数据（本地备用）
   const loadBudgetData = () => {
     const savedBudget = localStorage.getItem('xuzhou-travel-budget');
     if (savedBudget) {
@@ -153,11 +182,53 @@ const TravelPlan = () => {
         setBudgetData(parsedBudget);
       } catch (error) {
         console.error('Error loading budget data:', error);
+        setBudgetData(defaultBudgetData);
       }
+    } else {
+      setBudgetData(defaultBudgetData);
     }
   };
 
-  // 加载实际消费数据
+  // 从API加载实际支出数据
+  const loadActualExpenseDataFromAPI = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/expenses');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data.items.length > 0) {
+          // 按分类汇总支出数据
+          const categoryTotals = {};
+          result.data.items.forEach(item => {
+            if (!categoryTotals[item.category]) {
+              categoryTotals[item.category] = { amount: 0, details: [] };
+            }
+            categoryTotals[item.category].amount += parseFloat(item.amount);
+            categoryTotals[item.category].details.push(item.description);
+          });
+
+          // 转换为前端格式
+          const formattedData = Object.keys(categoryTotals).map((category, index) => ({
+            id: category.toLowerCase().replace(/\s+/g, ''),
+            category: category,
+            amount: categoryTotals[category].amount,
+            detail: categoryTotals[category].details.join(', ')
+          }));
+
+          setActualExpenseData(formattedData.length > 0 ? formattedData : getDefaultActualExpenseData());
+        } else {
+          setActualExpenseData(getDefaultActualExpenseData());
+        }
+      } else {
+        console.error('Failed to load expense data from API');
+        loadActualExpenseData(); // 回退到本地数据
+      }
+    } catch (error) {
+      console.error('Error loading expense data from API:', error);
+      loadActualExpenseData(); // 回退到本地数据
+    }
+  };
+
+  // 加载实际消费数据（本地备用）
   const loadActualExpenseData = () => {
     const savedActualExpense = localStorage.getItem('xuzhou-travel-actual-expense');
     if (savedActualExpense) {
@@ -252,9 +323,14 @@ const TravelPlan = () => {
   };
 
   // 计算总计
-  const totalAmount = budgetData.reduce((sum, item) => sum + item.amount, 0);
-  const totalActualAmount = actualExpenseData.reduce((sum, item) => sum + item.amount, 0);
+  const totalAmount = budgetData.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+  const totalActualAmount = actualExpenseData.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
   const totalDifference = totalActualAmount - totalAmount;
+
+  // 金额格式化函数
+  const formatAmount = (amount) => {
+    return parseFloat(amount || 0).toFixed(2);
+  };
 
   // 获取对比数据
   const getComparisonData = () => {
@@ -1703,7 +1779,7 @@ const TravelPlan = () => {
                                   title="点击编辑金额"
                                   style={{cursor: 'pointer'}}
                                 >
-                                  ¥{item.amount}
+                                  ¥{formatAmount(item.amount)}
                                 </div>
                               )}
                             </div>
@@ -1760,7 +1836,7 @@ const TravelPlan = () => {
                               <h5 className="mb-0">总计</h5>
                             </div>
                             <div className="col-md-4">
-                              <h4 className="text-success mb-0">¥{totalAmount}</h4>
+                              <h4 className="text-success mb-0">¥{formatAmount(totalAmount)}</h4>
                             </div>
                             <div className="col-md-4">
                               <p className="text-muted mb-0">两人周末游预算</p>
@@ -1848,7 +1924,7 @@ const TravelPlan = () => {
                                   title="点击编辑实际金额"
                                   style={{cursor: 'pointer'}}
                                 >
-                                  ¥{item.amount}
+                                  ¥{formatAmount(item.amount)}
                                 </div>
                               )}
                             </div>
@@ -1905,12 +1981,12 @@ const TravelPlan = () => {
                               <h5 className="mb-0">实际总计</h5>
                             </div>
                             <div className="col-md-4">
-                              <h4 className="text-warning mb-0">¥{totalActualAmount}</h4>
+                              <h4 className="text-warning mb-0">¥{formatAmount(totalActualAmount)}</h4>
                             </div>
                             <div className="col-md-4">
                               <p className="text-muted mb-0">
                                 差异: <span className={totalDifference >= 0 ? 'text-danger' : 'text-success'}>
-                                  {totalDifference >= 0 ? '+' : ''}¥{totalDifference}
+                                  {totalDifference >= 0 ? '+' : ''}¥{formatAmount(Math.abs(totalDifference))}
                                 </span>
                               </p>
                             </div>
@@ -1943,27 +2019,27 @@ const TravelPlan = () => {
                             <div className="comparison-bars mb-3">
                               <div className="d-flex justify-content-between align-items-center mb-2">
                                 <span className="small text-muted">预算</span>
-                                <span className="fw-bold text-primary">¥{item.amount}</span>
+                                <span className="fw-bold text-primary">¥{formatAmount(item.amount)}</span>
                               </div>
                               <div className="progress mb-2" style={{height: '20px'}}>
                                 <div
                                   className="progress-bar bg-primary"
                                   style={{width: '100%'}}
                                 >
-                                  预算 ¥{item.amount}
+                                  预算 ¥{formatAmount(item.amount)}
                                 </div>
                               </div>
 
                               <div className="d-flex justify-content-between align-items-center mb-2">
                                 <span className="small text-muted">实际</span>
-                                <span className="fw-bold text-warning">¥{item.actualAmount}</span>
+                                <span className="fw-bold text-warning">¥{formatAmount(item.actualAmount)}</span>
                               </div>
                               <div className="progress mb-2" style={{height: '20px'}}>
                                 <div
                                   className="progress-bar bg-warning"
                                   style={{width: item.amount > 0 ? `${Math.min((item.actualAmount / item.amount) * 100, 200)}%` : '0%'}}
                                 >
-                                  实际 ¥{item.actualAmount}
+                                  实际 ¥{formatAmount(item.actualAmount)}
                                 </div>
                               </div>
                             </div>
@@ -1972,13 +2048,13 @@ const TravelPlan = () => {
                               <div className="d-flex justify-content-between">
                                 <span>差异:</span>
                                 <span className={item.difference >= 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                  {item.difference >= 0 ? '+' : ''}¥{item.difference}
+                                  {item.difference >= 0 ? '+' : ''}¥{formatAmount(Math.abs(item.difference))}
                                 </span>
                               </div>
                               <div className="d-flex justify-content-between">
                                 <span>比例:</span>
                                 <span className={item.percentage >= 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                  {item.percentage >= 0 ? '+' : ''}{item.percentage}%
+                                  {item.percentage >= 0 ? '+' : ''}{item.percentage.toFixed(1)}%
                                 </span>
                               </div>
                             </div>
@@ -1994,28 +2070,28 @@ const TravelPlan = () => {
                     <div className="row text-center">
                       <div className="col-md-3">
                         <div className="analysis-item">
-                          <h5 className="text-primary mb-1">¥{totalAmount}</h5>
+                          <h5 className="text-primary mb-1">¥{formatAmount(totalAmount)}</h5>
                           <small className="text-muted">预算总额</small>
                         </div>
                       </div>
                       <div className="col-md-3">
                         <div className="analysis-item">
-                          <h5 className="text-warning mb-1">¥{totalActualAmount}</h5>
+                          <h5 className="text-warning mb-1">¥{formatAmount(totalActualAmount)}</h5>
                           <small className="text-muted">实际总额</small>
                         </div>
                       </div>
                       <div className="col-md-3">
                         <div className="analysis-item">
                           <h5 className={totalDifference >= 0 ? 'text-danger mb-1' : 'text-success mb-1'}>
-                            {totalDifference >= 0 ? '+' : ''}¥{totalDifference}
+                            {totalDifference >= 0 ? '+' : ''}¥{formatAmount(Math.abs(totalDifference))}
                           </h5>
                           <small className="text-muted">总差异</small>
                         </div>
                       </div>
                       <div className="col-md-3">
                         <div className="analysis-item">
-                          <h5 className={totalAmount > 0 && ((totalDifference / totalAmount) * 100) >= 0 ? 'text-danger mb-1' : 'text-success mb-1'}>
-                            {totalAmount > 0 ? `${totalDifference >= 0 ? '+' : ''}${Math.round(((totalDifference / totalAmount) * 100) * 100) / 100}%` : '0%'}
+                          <h5 className={totalDifference >= 0 ? 'text-danger mb-1' : 'text-success mb-1'}>
+                            {totalAmount > 0 ? `${totalDifference >= 0 ? '+' : ''}${(((totalDifference / totalAmount) * 100)).toFixed(1)}%` : '0%'}
                           </h5>
                           <small className="text-muted">总比例</small>
                         </div>
