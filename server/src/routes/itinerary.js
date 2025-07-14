@@ -149,7 +149,7 @@ router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, re
   });
 }));
 
-// PUT /api/itinerary/:id - 更新指定行程安排
+// PUT /api/itinerary/:id - 更新指定行程安排（全量更新）
 router.put('/:id',
   [...idValidation, ...itineraryValidation],
   validateRequest,
@@ -194,6 +194,53 @@ router.put('/:id',
     res.json({
       status: 'success',
       message: '更新行程安排成功',
+      data: item
+    });
+  })
+);
+
+// PATCH /api/itinerary/:id - 部分更新指定行程安排
+router.patch('/:id',
+  idValidation,
+  validateRequest,
+  catchAsync(async (req, res) => {
+    const { id } = req.params;
+
+    // 只更新请求体中提供的字段
+    const updateFields = {};
+    const allowedFields = ['date', 'time', 'activity', 'description', 'tips', 'location', 'duration', 'status'];
+
+    // 只包含请求中实际提供的字段
+    allowedFields.forEach(field => {
+      if (req.body.hasOwnProperty(field)) {
+        updateFields[field] = req.body[field];
+      }
+    });
+
+    // 如果没有提供任何可更新的字段
+    if (Object.keys(updateFields).length === 0) {
+      throw new AppError('请提供至少一个要更新的字段', 400);
+    }
+
+    const [updatedRowsCount] = await Itinerary.update(
+      updateFields,
+      {
+        where: { id },
+        returning: true
+      }
+    );
+
+    if (updatedRowsCount === 0) {
+      throw new AppError('行程安排不存在', 404);
+    }
+
+    const item = await Itinerary.findByPk(id);
+
+    logger.info(`部分更新行程安排，ID: ${id}, 更新字段: ${Object.keys(updateFields).join(', ')}`);
+
+    res.json({
+      status: 'success',
+      message: '部分更新行程安排成功',
       data: item
     });
   })

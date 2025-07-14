@@ -1216,162 +1216,204 @@ const TravelPlan = () => {
 
 
   // 获取默认行程数据
-  const getDefaultItinerary = () => [
+  const getDefaultItinerary = () => {
+    // 计算默认日期（从今天开始的周五）
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0是周日，6是周六
+    const daysUntilFriday = (5 - dayOfWeek + 7) % 7; // 计算到下一个周五的天数
+
+    const fridayDate = new Date(today);
+    fridayDate.setDate(today.getDate() + daysUntilFriday);
+
+    const saturdayDate = new Date(fridayDate);
+    saturdayDate.setDate(fridayDate.getDate() + 1);
+
+    const sundayDate = new Date(fridayDate);
+    sundayDate.setDate(fridayDate.getDate() + 2);
+
+    // 格式化日期
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    const formatMonthDay = (date) => `${date.getMonth() + 1}月${date.getDate()}日`;
+
+    return [
     {
       day: '周五',
-      date: '7月18日',
+      date: formatMonthDay(fridayDate),
       title: '出发日 - 南京到徐州',
+      originalDate: formatDate(fridayDate), // 添加原始日期
       activities: [
         {
           time: '19:30',
           activity: '南京南站集合',
           description: '提前1小时到达，取票安检',
           tips: 'G2700次高铁，建议提前网上购票',
-          icon: '🚄'
+          icon: '🚄',
+          originalDate: formatDate(fridayDate) // 添加原始日期
         },
         {
           time: '20:31',
           activity: '乘坐高铁G2700',
           description: '南京南 → 徐州东，约1小时34分钟',
           tips: '可以在车上休息，准备第二天的行程',
-          icon: '🚄'
+          icon: '🚄',
+          originalDate: formatDate(fridayDate)
         },
         {
           time: '22:05',
           activity: '到达徐州东站',
           description: '出站后乘坐地铁或打车前往酒店',
           tips: '地铁1号线可直达市区，约30分钟',
-          icon: '🏨'
+          icon: '🏨',
+          originalDate: formatDate(fridayDate)
         },
         {
           time: '22:40',
           activity: '季末轻居酒店入住',
           description: '办理入住手续，稍作休息',
           tips: '酒店位于人民广场地铁站附近，交通便利',
-          icon: '🛏️'
+          icon: '🛏️',
+          originalDate: formatDate(fridayDate)
         },
         {
           time: '23:00',
           activity: '附近觅食',
           description: '寻找附近的夜宵或小吃',
           tips: '可以尝试徐州烙馍或羊肉汤',
-          icon: '🍜'
+          icon: '🍜',
+          originalDate: formatDate(fridayDate)
         }
       ]
     },
     {
       day: '周六',
-      date: '全天',
+      date: formatMonthDay(saturdayDate),
       title: '徐州深度游',
+      originalDate: formatDate(saturdayDate), // 添加原始日期
       activities: [
         {
           time: '08:00',
           activity: '酒店早餐',
           description: '享用丰盛的早餐，为一天的行程做准备',
           tips: '如果酒店没有早餐，可以去附近吃羊肉汤',
-          icon: '🥐'
+          icon: '🥐',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '09:00',
           activity: '云龙湖风景区',
           description: '徐州最美的景点，湖光山色，适合散步拍照',
           tips: '建议租借共享单车环湖，约2-3小时',
-          icon: '🌊'
+          icon: '🌊',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '12:00',
           activity: '湖边午餐',
           description: '在云龙湖附近的餐厅享用午餐',
           tips: '推荐淮海食府，环境好适合情侣',
-          icon: '🍽️'
+          icon: '🍽️',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '14:00',
           activity: '彭祖园',
           description: '了解徐州历史文化，园林景观优美',
           tips: '适合慢慢游览，拍照留念',
-          icon: '🏛️'
+          icon: '🏛️',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '16:00',
           activity: '马市街小吃街',
           description: '品尝各种徐州特色小吃',
           tips: '不要吃太饱，留肚子尝试更多美食',
-          icon: '🍡'
+          icon: '🍡',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '18:00',
           activity: '徐州博物馆',
           description: '了解徐州深厚的历史文化',
           tips: '周六延长开放时间，可以慢慢参观',
-          icon: '🏛️'
+          icon: '🏛️',
+          originalDate: formatDate(saturdayDate)
         },
         {
           time: '20:00',
           activity: '晚餐时光',
           description: '选择一家有特色的餐厅享用晚餐',
           tips: '可以选择有情调的餐厅，增进感情',
-          icon: '🍷'
+          icon: '🍷',
+          originalDate: formatDate(saturdayDate)
         }
       ]
     },
     {
       day: '周日',
-      date: '7月20日',
+      date: formatMonthDay(sundayDate),
       title: '返程日 - 轻松游览',
+      originalDate: formatDate(sundayDate), // 添加原始日期
       activities: [
         {
           time: '09:00',
           activity: '酒店退房',
           description: '整理行李，办理退房手续',
           tips: '可以把行李寄存在酒店，轻松游览',
-          icon: '🧳'
+          icon: '🧳',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '09:30',
           activity: '户部山古建筑群',
           description: '徐州历史文化街区，古色古香',
           tips: '适合拍照，了解徐州传统建筑',
-          icon: '🏘️'
+          icon: '🏘️',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '11:00',
           activity: '购买特产',
           description: '购买徐州特产作为伴手礼',
           tips: '蜜三刀、牛蒡茶都是不错的选择',
-          icon: '🛍️'
+          icon: '🛍️',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '12:00',
           activity: '最后一餐',
           description: '享用徐州的最后一顿美食',
           tips: '可以再次品尝最喜欢的徐州菜',
-          icon: '🍜'
+          icon: '🍜',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '14:30',
           activity: '前往徐州站',
           description: '取行李，前往徐州站（注意是徐州站不是徐州东站）',
           tips: '预留充足时间，K347次火车从徐州站发车',
-          icon: '🚇'
+          icon: '🚇',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '15:38',
           activity: '返程火车K347',
           description: '徐州站 → 南京站，约4小时13分钟',
           tips: '可以在车上整理照片，回味旅程',
-          icon: '🚄'
+          icon: '🚄',
+          originalDate: formatDate(sundayDate)
         },
         {
           time: '19:51',
           activity: '到达南京站',
           description: '愉快的徐州之旅结束',
           tips: '记得分享旅行的美好回忆',
-          icon: '🏠'
+          icon: '🏠',
+          originalDate: formatDate(sundayDate)
         }
       ]
     }
   ];
+  };
 
   // 执行数据迁移
   const handleMigration = async () => {
@@ -1410,12 +1452,14 @@ const TravelPlan = () => {
       setIsLoading(true);
       setApiError('');
 
+      const currentDay = itineraryData[dayIndex];
       const newActivity = {
         time: '09:00',
         activity: '新活动',
         description: '请编辑活动描述',
         tips: '请添加小贴士',
-        icon: '📍'
+        icon: '📍',
+        originalDate: currentDay.originalDate // 使用当前天的原始日期
       };
 
       const newItineraryData = [...itineraryData];

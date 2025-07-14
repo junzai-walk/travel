@@ -70,7 +70,8 @@ export const transformBackendToFrontend = (backendData) => {
           icon: inferIcon(item.activity),
           location: item.location || '',
           duration: item.duration || null,
-          status: item.status || '计划中'
+          status: item.status || '计划中',
+          originalDate: item.date // 保存原始日期信息
         }));
 
       // 生成日期标题
@@ -83,6 +84,7 @@ export const transformBackendToFrontend = (backendData) => {
         day: dayName,
         date: monthDay,
         title: `第${index + 1}天 - ${dayName}`,
+        originalDate: dateKey, // 保存原始日期信息
         activities
       };
     });
@@ -91,26 +93,37 @@ export const transformBackendToFrontend = (backendData) => {
 };
 
 // 将前端数据转换为后端格式
-export const transformFrontendToBackend = (frontendData) => {
+export const transformFrontendToBackend = (frontendData, preserveOriginalDates = true) => {
   if (!frontendData || !Array.isArray(frontendData)) {
     return [];
   }
 
   const backendData = [];
-  
+
   frontendData.forEach((day, dayIndex) => {
     if (!day.activities || !Array.isArray(day.activities)) {
       return;
     }
 
-    // 计算实际日期
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() + dayIndex);
-    const dateString = baseDate.toISOString().split('T')[0];
+    // 获取日期字符串
+    let dateString;
+
+    if (preserveOriginalDates && day.originalDate) {
+      // 如果有原始日期信息，使用原始日期
+      dateString = day.originalDate;
+    } else if (preserveOriginalDates && day.activities.length > 0 && day.activities[0].originalDate) {
+      // 如果活动中有原始日期信息，使用第一个活动的原始日期
+      dateString = day.activities[0].originalDate;
+    } else {
+      // 回退到计算日期（用于新创建的行程）
+      const baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() + dayIndex);
+      dateString = baseDate.toISOString().split('T')[0];
+    }
 
     day.activities.forEach(activity => {
       const backendItem = {
-        date: dateString,
+        date: activity.originalDate || dateString, // 优先使用活动的原始日期
         time: activity.time,
         activity: activity.activity,
         description: activity.description || '',
@@ -167,7 +180,7 @@ export class ItineraryService {
   // 保存整个行程安排
   async saveAll(frontendData) {
     try {
-      const backendData = transformFrontendToBackend(frontendData);
+      const backendData = transformFrontendToBackend(frontendData, true); // 保持原始日期
       
       // 获取现有数据用于比较
       const existingResponse = await itineraryAPI.getAll();
@@ -179,9 +192,30 @@ export class ItineraryService {
       // 处理每个行程项
       for (const item of backendData) {
         if (item.id && existingIds.has(item.id)) {
-          // 更新现有项
-          const result = await itineraryAPI.update(item.id, item);
-          results.push(result);
+          // 查找现有项进行比较
+          const existingItem = existingData.find(existing => existing.id === item.id);
+
+          if (existingItem) {
+            // 检测变化的字段
+            const changedFields = {};
+            const fieldsToCheck = ['date', 'time', 'activity', 'description', 'tips', 'location', 'duration', 'status'];
+
+            fieldsToCheck.forEach(field => {
+              if (item[field] !== existingItem[field]) {
+                changedFields[field] = item[field];
+              }
+            });
+
+            // 只有当有字段变化时才更新
+            if (Object.keys(changedFields).length > 0) {
+              const result = await itineraryAPI.partialUpdate(item.id, changedFields);
+              results.push(result);
+            }
+          } else {
+            // 如果找不到现有项，使用全量更新作为备用
+            const result = await itineraryAPI.update(item.id, item);
+            results.push(result);
+          }
         } else {
           // 创建新项
           const result = await itineraryAPI.create(item);

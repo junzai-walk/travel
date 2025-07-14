@@ -118,21 +118,29 @@ export const itineraryAPI = {
     });
   },
   
-  // 更新指定行程安排
+  // 更新指定行程安排（全量更新）
   update: async (id, data) => {
     return request(`/itinerary/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
   },
-  
+
+  // 部分更新指定行程安排
+  partialUpdate: async (id, data) => {
+    return request(`/itinerary/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
   // 删除指定行程安排
   delete: async (id) => {
     return request(`/itinerary/${id}`, {
       method: 'DELETE'
     });
   },
-  
+
   // 更新行程状态
   updateStatus: async (id, status) => {
     return request(`/itinerary/${id}/status`, {
