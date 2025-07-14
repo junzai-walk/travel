@@ -61,7 +61,7 @@ const defaultBudgetData = [
   { category: '交通费', item_name: 'G2700高铁+K347火车', min_amount: 450, max_amount: 550, recommended_amount: 495, unit: '元', description: 'G2700高铁¥290+K347火车¥205', tips: '建议提前网上购票', season_factor: 1.00, is_essential: true },
   { category: '住宿费', item_name: '季末轻居酒店两晚', min_amount: 400, max_amount: 600, recommended_amount: 498, unit: '元', description: '季末轻居酒店两晚 ¥249×2', tips: '位于人民广场地铁站附近，交通便利', season_factor: 1.00, is_essential: true },
   { category: '餐饮费', item_name: '三餐+小吃（两人）', min_amount: 200, max_amount: 400, recommended_amount: 300, unit: '元', description: '包含正餐和特色小吃', tips: '可以尝试徐州烙馍、羊肉汤等特色美食', season_factor: 1.00, is_essential: true },
-  { category: '门票费', item_name: '景点门票（两人）', min_amount: 50, max_amount: 150, recommended_amount: 100, unit: '元', description: '主要景点门票费用', tips: '部分景点免费，如云龙湖', season_factor: 1.00, is_essential: true },
+  { category: '门票费', item_name: '景点门票（两人）', min_amount: 50, max_amount: 150, recommended_amount: 186, unit: '元', description: '主要景点门票费用', tips: '部分景点免费，如云龙湖', season_factor: 1.00, is_essential: true },
   { category: '交通费', item_name: '市内交通', min_amount: 30, max_amount: 80, recommended_amount: 50, unit: '元', description: '地铁+公交+打车', tips: '建议办理公交卡，方便出行', season_factor: 1.00, is_essential: true },
   { category: '购物费', item_name: '特产+纪念品', min_amount: 50, max_amount: 200, recommended_amount: 100, unit: '元', description: '蜜三刀、牛蒡茶等特产', tips: '适量购买，注意保存', season_factor: 1.00, is_essential: false }
 ];

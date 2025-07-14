@@ -4,10 +4,10 @@ async function setupMySQLConnection() {
   console.log('🔄 正在检查MySQL连接配置...');
   
   const config = {
-    host: '172.26.12.239',
+    host: '175.178.87.16',
     port: 3306,
-    user: 'root',
-    password: '123456',
+    user: 'junzai',
+    password: '123qwer',
     database: 'xuzhou'
   };
   

@@ -7,10 +7,10 @@ dotenv.config();
 // MySQL 连接配置
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'xuzhou',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '123456',
+  process.env.DB_USER || 'junzai',
+  process.env.DB_PASSWORD || '123qwer',
   {
-    host: process.env.DB_HOST || '172.26.12.239',
+    host: process.env.DB_HOST || '175.178.87.16',
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: (msg) => logger.debug(msg),
@@ -41,7 +41,7 @@ export const connectDB = async () => {
     await sequelize.authenticate();
     logger.info('MySQL 连接成功');
     logger.info(`数据库: ${process.env.DB_NAME || 'xuzhou'}`);
-    logger.info(`主机: ${process.env.DB_HOST || '172.26.12.239'}:${process.env.DB_PORT || 3306}`);
+    logger.info(`主机: ${process.env.DB_HOST || '175.178.87.16'}:${process.env.DB_PORT || 3306}`);
     return true;
   } catch (error) {
     logger.error('MySQL 连接失败:', error);

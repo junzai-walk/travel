@@ -25,10 +25,36 @@ const TravelPlan = () => {
   const [editingBudgetDetail, setEditingBudgetDetail] = useState(null);
   const [editingBudgetDetailValue, setEditingBudgetDetailValue] = useState('');
 
+  // 新增预算项目相关状态
+  const [showAddBudgetForm, setShowAddBudgetForm] = useState(false);
+  const [newBudgetItem, setNewBudgetItem] = useState({
+    category: '',
+    item_name: '',
+    min_amount: '',
+    max_amount: '',
+    recommended_amount: '',
+    unit: '元',
+    description: '',
+    tips: ''
+  });
+
   // 实际消费支出相关状态
   const [actualExpenseData, setActualExpenseData] = useState([]);
   const [editingActualExpense, setEditingActualExpense] = useState(null);
   const [editingActualExpenseValue, setEditingActualExpenseValue] = useState('');
+
+  // 新增支出记录相关状态
+  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
+  const [newExpenseItem, setNewExpenseItem] = useState({
+    category: '',
+    amount: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    location: '',
+    payment_method: '其他',
+    notes: ''
+  });
 
   // 实际消费详细说明编辑相关状态
   const [editingActualExpenseDetail, setEditingActualExpenseDetail] = useState(null);
@@ -155,9 +181,13 @@ const TravelPlan = () => {
           const formattedData = result.data.items.map(item => ({
             id: item.id,
             category: item.category,
-            amount: item.recommended_amount,
-            detail: item.description,
-            editable: true
+            amount: parseFloat(item.recommended_amount || 0),
+            detail: item.description || item.item_name,
+            editable: true,
+            min_amount: parseFloat(item.min_amount || 0),
+            max_amount: parseFloat(item.max_amount || 0),
+            unit: item.unit || '元',
+            tips: item.tips || ''
           }));
           setBudgetData(formattedData);
         } else {
@@ -170,6 +200,99 @@ const TravelPlan = () => {
     } catch (error) {
       console.error('Error loading budget data from API:', error);
       loadBudgetData(); // 回退到本地数据
+    }
+  };
+
+  // 创建新的预算参考项目
+  const createBudgetItem = async (budgetData) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/budget/reference', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: budgetData.category,
+          item_name: budgetData.item_name,
+          min_amount: budgetData.min_amount,
+          max_amount: budgetData.max_amount,
+          recommended_amount: budgetData.recommended_amount,
+          unit: budgetData.unit || '元',
+          description: budgetData.description,
+          tips: budgetData.tips,
+          is_essential: budgetData.is_essential || true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadBudgetDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return result.data;
+        }
+      } else {
+        throw new Error('Failed to create budget item');
+      }
+    } catch (error) {
+      console.error('Error creating budget item:', error);
+      setErrorMessage('创建预算项目失败，请重试');
+      throw error;
+    }
+  };
+
+  // 更新预算参考项目
+  const updateBudgetItem = async (itemId, budgetData) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/budget/reference/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(budgetData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadBudgetDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return result.data;
+        }
+      } else {
+        throw new Error('Failed to update budget item');
+      }
+    } catch (error) {
+      console.error('Error updating budget item:', error);
+      setErrorMessage('更新预算项目失败，请重试');
+      throw error;
+    }
+  };
+
+  // 删除预算参考项目
+  const deleteBudgetItem = async (itemId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/budget/reference/${itemId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadBudgetDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return true;
+        }
+      } else {
+        throw new Error('Failed to delete budget item');
+      }
+    } catch (error) {
+      console.error('Error deleting budget item:', error);
+      setErrorMessage('删除预算项目失败，请重试');
+      throw error;
     }
   };
 
@@ -200,18 +323,28 @@ const TravelPlan = () => {
           const categoryTotals = {};
           result.data.items.forEach(item => {
             if (!categoryTotals[item.category]) {
-              categoryTotals[item.category] = { amount: 0, details: [] };
+              categoryTotals[item.category] = {
+                amount: 0,
+                details: [],
+                items: [],
+                count: 0
+              };
             }
             categoryTotals[item.category].amount += parseFloat(item.amount);
             categoryTotals[item.category].details.push(item.description);
+            categoryTotals[item.category].items.push(item);
+            categoryTotals[item.category].count++;
           });
 
           // 转换为前端格式
-          const formattedData = Object.keys(categoryTotals).map((category, index) => ({
+          const formattedData = Object.keys(categoryTotals).map((category) => ({
             id: category.toLowerCase().replace(/\s+/g, ''),
             category: category,
             amount: categoryTotals[category].amount,
-            detail: categoryTotals[category].details.join(', ')
+            detail: categoryTotals[category].details.join(', '),
+            items: categoryTotals[category].items,
+            count: categoryTotals[category].count,
+            editable: true
           }));
 
           setActualExpenseData(formattedData.length > 0 ? formattedData : getDefaultActualExpenseData());
@@ -225,6 +358,99 @@ const TravelPlan = () => {
     } catch (error) {
       console.error('Error loading expense data from API:', error);
       loadActualExpenseData(); // 回退到本地数据
+    }
+  };
+
+  // 创建新的支出记录
+  const createExpenseItem = async (expenseData) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: expenseData.category,
+          amount: expenseData.amount,
+          description: expenseData.description,
+          date: expenseData.date || new Date().toISOString().split('T')[0],
+          time: expenseData.time || new Date().toTimeString().slice(0, 5),
+          location: expenseData.location || '',
+          payment_method: expenseData.payment_method || '其他',
+          notes: expenseData.notes || '',
+          is_planned: expenseData.is_planned || false
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadActualExpenseDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return result.data;
+        }
+      } else {
+        throw new Error('Failed to create expense item');
+      }
+    } catch (error) {
+      console.error('Error creating expense item:', error);
+      setErrorMessage('创建支出记录失败，请重试');
+      throw error;
+    }
+  };
+
+  // 更新支出记录
+  const updateExpenseItem = async (itemId, expenseData) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/expenses/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(expenseData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadActualExpenseDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return result.data;
+        }
+      } else {
+        throw new Error('Failed to update expense item');
+      }
+    } catch (error) {
+      console.error('Error updating expense item:', error);
+      setErrorMessage('更新支出记录失败，请重试');
+      throw error;
+    }
+  };
+
+  // 删除支出记录
+  const deleteExpenseItem = async (itemId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/expenses/${itemId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          await loadActualExpenseDataFromAPI(); // 重新加载数据
+          setShowSaveMessage(true);
+          setTimeout(() => setShowSaveMessage(false), 2000);
+          return true;
+        }
+      } else {
+        throw new Error('Failed to delete expense item');
+      }
+    } catch (error) {
+      console.error('Error deleting expense item:', error);
+      setErrorMessage('删除支出记录失败，请重试');
+      throw error;
     }
   };
 
@@ -272,6 +498,150 @@ const TravelPlan = () => {
     setTimeout(() => setShowSaveMessage(false), 2000);
   };
 
+  // 添加新预算项目
+  const handleAddBudgetItem = async () => {
+    try {
+      // 验证必填字段
+      if (!newBudgetItem.category || !newBudgetItem.item_name || !newBudgetItem.recommended_amount) {
+        setErrorMessage('请填写分类、项目名称和推荐金额');
+        return;
+      }
+
+      const minAmount = parseFloat(newBudgetItem.min_amount) || 0;
+      const maxAmount = parseFloat(newBudgetItem.max_amount) || parseFloat(newBudgetItem.recommended_amount);
+      const recommendedAmount = parseFloat(newBudgetItem.recommended_amount);
+
+      if (recommendedAmount <= 0) {
+        setErrorMessage('推荐金额必须大于0');
+        return;
+      }
+
+      if (maxAmount < minAmount) {
+        setErrorMessage('最高金额不能小于最低金额');
+        return;
+      }
+
+      if (recommendedAmount < minAmount || recommendedAmount > maxAmount) {
+        setErrorMessage('推荐金额必须在最低和最高金额之间');
+        return;
+      }
+
+      const budgetData = {
+        category: newBudgetItem.category,
+        item_name: newBudgetItem.item_name,
+        min_amount: minAmount,
+        max_amount: maxAmount,
+        recommended_amount: recommendedAmount,
+        unit: newBudgetItem.unit || '元',
+        description: newBudgetItem.description || newBudgetItem.item_name,
+        tips: newBudgetItem.tips || '',
+        is_essential: true
+      };
+
+      await createBudgetItem(budgetData);
+
+      // 重置表单
+      setNewBudgetItem({
+        category: '',
+        item_name: '',
+        min_amount: '',
+        max_amount: '',
+        recommended_amount: '',
+        unit: '元',
+        description: '',
+        tips: ''
+      });
+      setShowAddBudgetForm(false);
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在createBudgetItem中处理
+    }
+  };
+
+  // 取消添加预算项目
+  const handleCancelAddBudget = () => {
+    setNewBudgetItem({
+      category: '',
+      item_name: '',
+      min_amount: '',
+      max_amount: '',
+      recommended_amount: '',
+      unit: '元',
+      description: '',
+      tips: ''
+    });
+    setShowAddBudgetForm(false);
+    setErrorMessage('');
+  };
+
+  // 添加新支出记录
+  const handleAddExpenseItem = async () => {
+    try {
+      // 验证必填字段
+      if (!newExpenseItem.category || !newExpenseItem.amount || !newExpenseItem.description) {
+        setErrorMessage('请填写分类、金额和描述');
+        return;
+      }
+
+      const amount = parseFloat(newExpenseItem.amount);
+      if (amount <= 0) {
+        setErrorMessage('金额必须大于0');
+        return;
+      }
+
+      if (amount > 999999) {
+        setErrorMessage('金额不能超过999999');
+        return;
+      }
+
+      const expenseData = {
+        category: newExpenseItem.category,
+        amount: amount,
+        description: newExpenseItem.description,
+        date: newExpenseItem.date,
+        time: newExpenseItem.time,
+        location: newExpenseItem.location,
+        payment_method: newExpenseItem.payment_method,
+        notes: newExpenseItem.notes,
+        is_planned: false
+      };
+
+      await createExpenseItem(expenseData);
+
+      // 重置表单
+      setNewExpenseItem({
+        category: '',
+        amount: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        location: '',
+        payment_method: '其他',
+        notes: ''
+      });
+      setShowAddExpenseForm(false);
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在createExpenseItem中处理
+    }
+  };
+
+  // 取消添加支出记录
+  const handleCancelAddExpense = () => {
+    setNewExpenseItem({
+      category: '',
+      amount: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0, 5),
+      location: '',
+      payment_method: '其他',
+      notes: ''
+    });
+    setShowAddExpenseForm(false);
+    setErrorMessage('');
+  };
+
   // 开始编辑
   const startEditing = (item) => {
     setEditingItem(item.id);
@@ -287,7 +657,7 @@ const TravelPlan = () => {
   };
 
   // 保存编辑
-  const saveEdit = (itemId) => {
+  const saveEdit = async (itemId) => {
     const numValue = parseFloat(editValue);
 
     // 验证输入
@@ -296,29 +666,63 @@ const TravelPlan = () => {
       return;
     }
 
-    if (numValue > 99999) {
-      setErrorMessage('金额不能超过99999');
+    if (numValue > 999999) {
+      setErrorMessage('金额不能超过999999');
       return;
     }
 
-    // 更新数据
-    const newBudgetData = budgetData.map(item =>
-      item.id === itemId ? { ...item, amount: numValue } : item
-    );
+    try {
+      // 找到要更新的项目
+      const item = budgetData.find(item => item.id === itemId);
+      if (!item) {
+        setErrorMessage('找不到要更新的预算项目');
+        return;
+      }
 
-    saveBudgetData(newBudgetData);
-    setEditingItem(null);
-    setEditValue('');
-    setErrorMessage('');
+      // 准备更新数据
+      const updateData = {
+        category: item.category,
+        item_name: item.detail || item.category,
+        min_amount: item.min_amount || 0,
+        max_amount: Math.max(item.max_amount || numValue, numValue),
+        recommended_amount: numValue,
+        unit: item.unit || '元',
+        description: item.detail || item.category,
+        tips: item.tips || '',
+        is_essential: true
+      };
+
+      // 调用API更新
+      await updateBudgetItem(itemId, updateData);
+
+      setEditingItem(null);
+      setEditValue('');
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在updateBudgetItem中处理
+    }
   };
 
   // 重置为默认预算
-  const resetToDefault = () => {
+  const resetToDefault = async () => {
     if (window.confirm('确定要重置为默认预算吗？这将清除您的所有自定义修改。')) {
-      localStorage.removeItem('xuzhou-travel-budget');
-      setBudgetData(defaultBudgetData);
-      setShowSaveMessage(true);
-      setTimeout(() => setShowSaveMessage(false), 2000);
+      try {
+        // 重新加载API数据
+        await loadBudgetDataFromAPI();
+
+        // 如果API没有数据，使用默认数据
+        if (budgetData.length === 0) {
+          setBudgetData(defaultBudgetData);
+        }
+
+        localStorage.removeItem('xuzhou-travel-budget');
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+      } catch (error) {
+        console.error('Error resetting budget data:', error);
+        setBudgetData(defaultBudgetData);
+        setErrorMessage('重置失败，已使用默认数据');
+      }
     }
   };
 
@@ -432,7 +836,7 @@ const TravelPlan = () => {
   };
 
   // 保存实际消费编辑
-  const saveActualExpenseEdit = (itemId) => {
+  const saveActualExpenseEdit = async (itemId) => {
     const numValue = parseFloat(editingActualExpenseValue);
 
     // 验证输入
@@ -441,20 +845,40 @@ const TravelPlan = () => {
       return;
     }
 
-    if (numValue > 99999) {
-      setErrorMessage('金额不能超过99999');
+    if (numValue > 999999) {
+      setErrorMessage('金额不能超过999999');
       return;
     }
 
-    // 更新数据
-    const newActualExpenseData = actualExpenseData.map(item =>
-      item.id === itemId ? { ...item, amount: numValue } : item
-    );
+    try {
+      // 找到要更新的项目
+      const item = actualExpenseData.find(item => item.id === itemId);
+      if (!item) {
+        setErrorMessage('找不到要更新的支出记录');
+        return;
+      }
 
-    saveActualExpenseData(newActualExpenseData);
-    setEditingActualExpense(null);
-    setEditingActualExpenseValue('');
-    setErrorMessage('');
+      // 创建新的支出记录而不是更新现有记录
+      const expenseData = {
+        category: item.category,
+        amount: numValue,
+        description: `${item.category}支出`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        payment_method: '其他',
+        notes: `更新的${item.category}支出记录`,
+        is_planned: false
+      };
+
+      // 调用API创建新记录
+      await createExpenseItem(expenseData);
+
+      setEditingActualExpense(null);
+      setEditingActualExpenseValue('');
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在createExpenseItem中处理
+    }
   };
 
   // 处理实际消费编辑的键盘事件
@@ -467,12 +891,25 @@ const TravelPlan = () => {
   };
 
   // 重置实际消费为默认数据
-  const resetActualExpenseToDefault = () => {
+  const resetActualExpenseToDefault = async () => {
     if (window.confirm('确定要重置实际消费数据吗？这将清除您的所有记录。')) {
-      localStorage.removeItem('xuzhou-travel-actual-expense');
-      setActualExpenseData(getDefaultActualExpenseData());
-      setShowSaveMessage(true);
-      setTimeout(() => setShowSaveMessage(false), 2000);
+      try {
+        // 重新加载API数据
+        await loadActualExpenseDataFromAPI();
+
+        // 如果API没有数据，使用默认数据
+        if (actualExpenseData.length === 0) {
+          setActualExpenseData(getDefaultActualExpenseData());
+        }
+
+        localStorage.removeItem('xuzhou-travel-actual-expense');
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+      } catch (error) {
+        console.error('Error resetting expense data:', error);
+        setActualExpenseData(getDefaultActualExpenseData());
+        setErrorMessage('重置失败，已使用默认数据');
+      }
     }
   };
 
@@ -1719,6 +2156,12 @@ const TravelPlan = () => {
                     </div>
                     <div className="col-md-6 text-md-end">
                       <small className="me-3">💡 点击金额可以编辑自定义预算</small>
+                      <button
+                        className="btn btn-outline-light btn-sm me-2"
+                        onClick={() => setShowAddBudgetForm(true)}
+                      >
+                        ➕ 添加预算项目
+                      </button>
                       <button className="btn btn-outline-light btn-sm" onClick={resetToDefault}>
                         重置为默认预算
                       </button>
@@ -1729,6 +2172,120 @@ const TravelPlan = () => {
                 {showSaveMessage && (
                   <div className="alert alert-success mb-0">
                     ✅ 预算已保存到本地
+                  </div>
+                )}
+
+                {errorMessage && (
+                  <div className="alert alert-danger mb-0">
+                    ❌ {errorMessage}
+                  </div>
+                )}
+
+                {/* 添加新预算项目表单 */}
+                {showAddBudgetForm && (
+                  <div className="card-body border-bottom">
+                    <h6 className="mb-3">➕ 添加新预算项目</h6>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label">分类 *</label>
+                        <select
+                          className="form-select"
+                          value={newBudgetItem.category}
+                          onChange={(e) => setNewBudgetItem({...newBudgetItem, category: e.target.value})}
+                        >
+                          <option value="">请选择分类</option>
+                          <option value="交通费">交通费</option>
+                          <option value="住宿费">住宿费</option>
+                          <option value="餐饮费">餐饮费</option>
+                          <option value="门票费">门票费</option>
+                          <option value="购物费">购物费</option>
+                          <option value="娱乐费">娱乐费</option>
+                          <option value="其他费用">其他费用</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">项目名称 *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={newBudgetItem.item_name}
+                          onChange={(e) => setNewBudgetItem({...newBudgetItem, item_name: e.target.value})}
+                          placeholder="例如：高铁票"
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">最低金额</label>
+                        <div className="input-group">
+                          <span className="input-group-text">¥</span>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={newBudgetItem.min_amount}
+                            onChange={(e) => setNewBudgetItem({...newBudgetItem, min_amount: e.target.value})}
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">推荐金额 *</label>
+                        <div className="input-group">
+                          <span className="input-group-text">¥</span>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={newBudgetItem.recommended_amount}
+                            onChange={(e) => setNewBudgetItem({...newBudgetItem, recommended_amount: e.target.value})}
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">最高金额</label>
+                        <div className="input-group">
+                          <span className="input-group-text">¥</span>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={newBudgetItem.max_amount}
+                            onChange={(e) => setNewBudgetItem({...newBudgetItem, max_amount: e.target.value})}
+                            placeholder="自动设置"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label">描述</label>
+                        <textarea
+                          className="form-control"
+                          rows="2"
+                          value={newBudgetItem.description}
+                          onChange={(e) => setNewBudgetItem({...newBudgetItem, description: e.target.value})}
+                          placeholder="详细描述这个预算项目..."
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <div className="d-flex gap-2">
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleAddBudgetItem}
+                          >
+                            ✓ 添加
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={handleCancelAddBudget}
+                          >
+                            ✕ 取消
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1864,6 +2421,12 @@ const TravelPlan = () => {
                     </div>
                     <div className="col-md-6 text-md-end">
                       <small className="me-3">💡 点击金额记录实际花费</small>
+                      <button
+                        className="btn btn-outline-dark btn-sm me-2"
+                        onClick={() => setShowAddExpenseForm(true)}
+                      >
+                        ➕ 添加支出记录
+                      </button>
                       <button className="btn btn-outline-dark btn-sm" onClick={resetActualExpenseToDefault}>
                         重置消费记录
                       </button>
@@ -1874,6 +2437,128 @@ const TravelPlan = () => {
                 {showSaveMessage && (
                   <div className="alert alert-success mb-0">
                     ✅ 消费记录已保存到本地
+                  </div>
+                )}
+
+                {/* 添加新支出记录表单 */}
+                {showAddExpenseForm && (
+                  <div className="card-body border-bottom">
+                    <h6 className="mb-3">➕ 添加新支出记录</h6>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label">分类 *</label>
+                        <select
+                          className="form-select"
+                          value={newExpenseItem.category}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, category: e.target.value})}
+                        >
+                          <option value="">请选择分类</option>
+                          <option value="交通费">交通费</option>
+                          <option value="住宿费">住宿费</option>
+                          <option value="餐饮费">餐饮费</option>
+                          <option value="门票费">门票费</option>
+                          <option value="购物费">购物费</option>
+                          <option value="娱乐费">娱乐费</option>
+                          <option value="其他费用">其他费用</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">金额 *</label>
+                        <div className="input-group">
+                          <span className="input-group-text">¥</span>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={newExpenseItem.amount}
+                            onChange={(e) => setNewExpenseItem({...newExpenseItem, amount: e.target.value})}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">日期</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={newExpenseItem.date}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, date: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">时间</label>
+                        <input
+                          type="time"
+                          className="form-control"
+                          value={newExpenseItem.time}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, time: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">支付方式</label>
+                        <select
+                          className="form-select"
+                          value={newExpenseItem.payment_method}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, payment_method: e.target.value})}
+                        >
+                          <option value="现金">现金</option>
+                          <option value="支付宝">支付宝</option>
+                          <option value="微信支付">微信支付</option>
+                          <option value="银行卡">银行卡</option>
+                          <option value="信用卡">信用卡</option>
+                          <option value="其他">其他</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">地点</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={newExpenseItem.location}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, location: e.target.value})}
+                          placeholder="消费地点"
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label">描述 *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={newExpenseItem.description}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, description: e.target.value})}
+                          placeholder="详细描述这笔支出..."
+                          required
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label">备注</label>
+                        <textarea
+                          className="form-control"
+                          rows="2"
+                          value={newExpenseItem.notes}
+                          onChange={(e) => setNewExpenseItem({...newExpenseItem, notes: e.target.value})}
+                          placeholder="其他备注信息..."
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <div className="d-flex gap-2">
+                          <button
+                            className="btn btn-warning"
+                            onClick={handleAddExpenseItem}
+                          >
+                            ✓ 添加
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={handleCancelAddExpense}
+                          >
+                            ✕ 取消
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
