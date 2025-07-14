@@ -19,11 +19,20 @@ const Itinerary = sequelize.define('Itinerary', {
       isDate: {
         msg: '请输入有效的日期格式'
       },
-      isAfterToday(value) {
+      isValidDate(value) {
+        const inputDate = new Date(value);
+        const minDate = new Date('1900-01-01');
+        const maxDate = new Date('2100-12-31');
+
+        if (inputDate < minDate || inputDate > maxDate) {
+          throw new Error('请输入有效的日期范围(1900-2100年)');
+        }
+
+        // 对于过去的日期，只记录警告，不阻止创建（允许历史数据）
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (new Date(value) < today) {
-          throw new Error('行程日期不能早于今天');
+        if (inputDate < today) {
+          console.warn(`警告：创建了过去日期的行程: ${value}`);
         }
       }
     },

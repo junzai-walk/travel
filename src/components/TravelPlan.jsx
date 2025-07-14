@@ -147,7 +147,24 @@ const TravelPlan = () => {
   const loadItineraryFromAPI = async () => {
     try {
       const data = await itineraryService.getAll();
-      setItineraryData(data.length > 0 ? data : getDefaultItinerary());
+
+      // 如果API返回空数据，检查是否需要使用种子数据
+      if (!data || data.length === 0) {
+        console.log('API返回空数据，使用默认行程数据');
+        const defaultData = getDefaultItinerary();
+
+        // 尝试将默认数据保存到API（使用未来日期）
+        try {
+          await itineraryService.saveAll(defaultData);
+          console.log('默认数据已保存到API');
+          setItineraryData(defaultData);
+        } catch (saveError) {
+          console.warn('保存默认数据到API失败，使用本地数据:', saveError);
+          setItineraryData(defaultData);
+        }
+      } else {
+        setItineraryData(data);
+      }
     } catch (error) {
       console.error('从API加载行程数据失败:', error);
       throw error;
@@ -964,6 +981,7 @@ const TravelPlan = () => {
         setItineraryData(newItineraryData);
       } else {
         // 保存到API
+        console.log('保存行程数据到API:', newItineraryData);
         await itineraryService.saveAll(newItineraryData);
         setItineraryData(newItineraryData);
       }
@@ -972,10 +990,32 @@ const TravelPlan = () => {
       setTimeout(() => setShowSaveMessage(false), 2000);
     } catch (error) {
       console.error('保存行程数据失败:', error);
-      setApiError(error.message || '保存失败');
+
+      // 提供更详细的错误信息
+      let errorMessage = '保存失败';
+      if (error.message) {
+        if (error.message.includes('行程日期不能早于今天')) {
+          errorMessage = '保存失败：包含过去的日期，请检查行程日期设置';
+        } else if (error.message.includes('数据验证失败')) {
+          errorMessage = `数据验证失败：${error.message}`;
+        } else if (error.message.includes('网络')) {
+          errorMessage = '网络连接失败，数据已保存到本地';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setApiError(errorMessage);
+
       // 回退到localStorage保存
-      localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
-      setItineraryData(newItineraryData);
+      try {
+        localStorage.setItem('xuzhou-travel-itinerary', JSON.stringify(newItineraryData));
+        setItineraryData(newItineraryData);
+        console.log('数据已保存到本地存储作为备份');
+      } catch (localError) {
+        console.error('本地保存也失败:', localError);
+        setApiError('保存失败：无法保存到服务器和本地存储');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1453,13 +1493,31 @@ const TravelPlan = () => {
       setApiError('');
 
       const currentDay = itineraryData[dayIndex];
+
+      // 确保使用未来的日期
+      let activityDate = currentDay.originalDate;
+
+      // 如果原始日期是过去的日期，使用未来的日期
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const originalDate = new Date(activityDate);
+
+      if (originalDate < today) {
+        // 计算未来的日期：今天 + dayIndex 天
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + dayIndex + 1); // +1 确保是未来日期
+        activityDate = futureDate.toISOString().split('T')[0];
+
+        console.log(`调整活动日期: ${currentDay.originalDate} -> ${activityDate}`);
+      }
+
       const newActivity = {
         time: '09:00',
         activity: '新活动',
         description: '请编辑活动描述',
         tips: '请添加小贴士',
         icon: '📍',
-        originalDate: currentDay.originalDate // 使用当前天的原始日期
+        originalDate: activityDate // 使用调整后的日期
       };
 
       const newItineraryData = [...itineraryData];
@@ -1473,7 +1531,20 @@ const TravelPlan = () => {
 
     } catch (error) {
       console.error('添加活动失败:', error);
-      setApiError(error.message || '添加活动失败');
+
+      // 提供更详细的错误信息
+      let errorMessage = '添加活动失败';
+      if (error.message) {
+        if (error.message.includes('行程日期不能早于今天')) {
+          errorMessage = '无法添加活动：日期不能是过去的日期，请刷新页面获取最新数据';
+        } else if (error.message.includes('数据验证失败')) {
+          errorMessage = `数据验证失败：${error.message}`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setApiError(errorMessage);
     } finally {
       setIsLoading(false);
     }

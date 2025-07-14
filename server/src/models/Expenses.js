@@ -178,7 +178,22 @@ Expenses.prototype.toJSON = function() {
   const values = Object.assign({}, this.get());
   // 格式化日期为 YYYY-MM-DD
   if (values.date) {
-    values.date = values.date.toISOString().split('T')[0];
+    // 检查是否已经是Date对象，如果不是则转换
+    if (values.date instanceof Date) {
+      values.date = values.date.toISOString().split('T')[0];
+    } else if (typeof values.date === 'string') {
+      // 如果是字符串，尝试解析为Date对象再格式化
+      try {
+        const dateObj = new Date(values.date);
+        if (!isNaN(dateObj.getTime())) {
+          values.date = dateObj.toISOString().split('T')[0];
+        }
+        // 如果已经是YYYY-MM-DD格式，保持不变
+      } catch (error) {
+        // 如果转换失败，保持原值
+        console.warn('日期格式转换失败:', values.date, error);
+      }
+    }
   }
   return values;
 };

@@ -14,7 +14,7 @@ const Header = ({ activeSection, setActiveSection }) => {
     { id: 'food', label: '美食', icon: '🍜' },
     { id: 'accommodation', label: '住宿', icon: '🏨' },
     { id: 'map', label: '地图', icon: '🗺️' },
-    { id: 'api-test', label: 'API测试', icon: '🧪' }
+    // { id: 'api-test', label: 'API测试', icon: '🧪' }
   ];
 
   // 处理全局搜索结果选择

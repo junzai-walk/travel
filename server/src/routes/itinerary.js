@@ -17,9 +17,21 @@ const itineraryValidation = [
       const inputDate = new Date(value);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (inputDate < today) {
-        throw new Error('行程日期不能早于今天');
+
+      // 允许历史数据（种子数据）和未来数据
+      // 只对明显错误的日期进行限制（如1900年之前或2100年之后）
+      const minDate = new Date('1900-01-01');
+      const maxDate = new Date('2100-12-31');
+
+      if (inputDate < minDate || inputDate > maxDate) {
+        throw new Error('请输入有效的日期范围(1900-2100年)');
       }
+
+      // 对于新创建的行程，建议使用未来日期，但不强制
+      if (inputDate < today) {
+        console.warn(`警告：创建了过去日期的行程: ${value}`);
+      }
+
       return true;
     }),
   body('time')
