@@ -92,7 +92,7 @@ const TravelPlan = () => {
   // 检查网络连接
   const checkConnection = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/health');
+      const response = await fetch('http://175.178.87.16:30001/api/health');
       return response.ok;
     } catch (error) {
       return false;
@@ -173,7 +173,7 @@ const TravelPlan = () => {
   // 从API加载预算数据
   const loadBudgetDataFromAPI = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/budget');
+      const response = await fetch('http://175.178.87.16:30001/api/budget');
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success' && result.data.items.length > 0) {
@@ -206,7 +206,7 @@ const TravelPlan = () => {
   // 创建新的预算参考项目
   const createBudgetItem = async (budgetData) => {
     try {
-      const response = await fetch('http://localhost:3001/api/budget/reference', {
+      const response = await fetch('http://175.178.87.16:30001/api/budget/reference', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +245,7 @@ const TravelPlan = () => {
   // 更新预算参考项目
   const updateBudgetItem = async (itemId, budgetData) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/budget/reference/${itemId}`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/budget/reference/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -274,7 +274,7 @@ const TravelPlan = () => {
   // 删除预算参考项目
   const deleteBudgetItem = async (itemId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/budget/reference/${itemId}`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/budget/reference/${itemId}`, {
         method: 'DELETE'
       });
 
@@ -315,7 +315,7 @@ const TravelPlan = () => {
   // 从API加载实际支出数据
   const loadActualExpenseDataFromAPI = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/expenses');
+      const response = await fetch('http://175.178.87.16:30001/api/expenses');
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success' && result.data.items.length > 0) {
@@ -364,7 +364,7 @@ const TravelPlan = () => {
   // 创建新的支出记录
   const createExpenseItem = async (expenseData) => {
     try {
-      const response = await fetch('http://localhost:3001/api/expenses', {
+      const response = await fetch('http://175.178.87.16:30001/api/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ const TravelPlan = () => {
   // 更新支出记录
   const updateExpenseItem = async (itemId, expenseData) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/expenses/${itemId}`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/expenses/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ const TravelPlan = () => {
   // 删除支出记录
   const deleteExpenseItem = async (itemId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/expenses/${itemId}`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/expenses/${itemId}`, {
         method: 'DELETE'
       });
 

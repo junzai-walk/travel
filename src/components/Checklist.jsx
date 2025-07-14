@@ -23,7 +23,7 @@ const Checklist = () => {
   // 从API加载清单数据
   const loadChecklistData = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/checklist');
+      const response = await fetch('http://175.178.87.16:30001/api/checklist');
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success' && result.data.items.length > 0) {
@@ -74,7 +74,7 @@ const Checklist = () => {
   // 切换清单项目的勾选状态
   const toggleChecklistItem = async (itemId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/checklist/${itemId}/toggle`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}/toggle`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ const Checklist = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/checklist', {
+      const response = await fetch('http://175.178.87.16:30001/api/checklist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ const Checklist = () => {
   const deleteChecklistItem = async (itemId) => {
     if (window.confirm('确定要删除这个物品吗？')) {
       try {
-        const response = await fetch(`http://localhost:3001/api/checklist/${itemId}`, {
+        const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}`, {
           method: 'DELETE'
         });
 
@@ -180,7 +180,7 @@ const Checklist = () => {
 
     try {
       const item = checklistData.find(item => item.id === itemId);
-      const response = await fetch(`http://localhost:3001/api/checklist/${itemId}`, {
+      const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ const Checklist = () => {
       try {
         // 首先删除所有现有数据
         for (const item of checklistData) {
-          await fetch(`http://localhost:3001/api/checklist/${item.id}`, {
+          await fetch(`http://175.178.87.16:30001/api/checklist/${item.id}`, {
             method: 'DELETE'
           });
         }

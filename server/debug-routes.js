@@ -27,8 +27,8 @@ async function testRouteRegistration() {
     const PORT = 3002;
     app.listen(PORT, () => {
       console.log(`🚀 测试服务器启动在端口 ${PORT}`);
-      console.log(`📍 测试地址: http://localhost:${PORT}/test`);
-      console.log(`📍 清单接口: http://localhost:${PORT}/api/checklist`);
+      console.log(`📍 测试地址: http://175.178.87.16:${PORT}/test`);
+      console.log(`📍 清单接口: http://175.178.87.16:${PORT}/api/checklist`);
     });
     
   } catch (error) {

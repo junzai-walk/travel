@@ -1,5 +1,5 @@
 // 徐州旅游指南应用 - 三个核心模块API功能演示脚本
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://175.178.87.16:30001/api';
 
 async function demonstrateFeatures() {
   console.log('🎯 徐州旅游指南应用 - 三个核心模块API功能演示');

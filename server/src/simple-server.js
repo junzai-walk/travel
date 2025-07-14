@@ -7,15 +7,15 @@ import morgan from 'morgan';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 30001;
 
 // 中间件配置
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:3000',
+    'http://175.178.87.16:5173',
+    'http://175.178.87.16:5174',
+    'http://175.178.87.16:5175',
+    'http://175.178.87.16:3000',
     'http://175.178.87.16:9943',
     'https://175.178.87.16:9943'
   ],
@@ -157,7 +157,7 @@ app.use((error, req, res, next) => {
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`🚀 徐州旅游指南后端服务启动成功！(简化模式)`);
-  console.log(`📍 服务地址: http://localhost:${PORT}`);
-  console.log(`🏥 健康检查: http://localhost:${PORT}/api/health`);
+  console.log(`📍 服务地址: http://175.178.87.16:${PORT}`);
+  console.log(`🏥 健康检查: http://175.178.87.16:${PORT}/api/health`);
   console.log(`⚠️  简化模式：数据库功能已禁用，仅提供API模拟`);
 });

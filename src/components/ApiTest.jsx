@@ -8,7 +8,7 @@ const ApiTest = () => {
   // 测试健康检查
   const testHealthCheck = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/health');
+      const response = await fetch('http://175.178.87.16:30001/api/health');
       const data = await response.json();
       return { success: true, data };
     } catch (error) {
@@ -19,7 +19,7 @@ const ApiTest = () => {
   // 测试 MongoDB 连接
   const testMongoConnection = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/test-mongo');
+      const response = await fetch('http://175.178.87.16:30001/api/test-mongo');
       const data = await response.json();
       return { success: true, data };
     } catch (error) {
@@ -194,7 +194,7 @@ const ApiTest = () => {
           <div className="mt-4">
             <h5>📝 测试说明</h5>
             <ul className="list-unstyled">
-              <li>• 确保后端服务器运行在 http://localhost:3001</li>
+              <li>• 确保后端服务器运行在 http://175.178.87.16:30001</li>
               <li>• 绿色表示 API 接口连接成功</li>
               <li>• 红色表示 API 接口连接失败</li>
             </ul>

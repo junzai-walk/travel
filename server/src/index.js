@@ -9,16 +9,16 @@ import { errorHandler } from './middleware/errorHandler.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 30001;
 const isTestMode = process.env.NODE_ENV === 'test';
 
 // 中间件配置
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:3000',
+    'http://175.178.87.16:5173',
+    'http://175.178.87.16:5174',
+    'http://175.178.87.16:5175',
+    'http://175.178.87.16:3000',
     'http://175.178.87.16:9943',  // 生产环境前端地址
     'https://175.178.87.16:9943'  // HTTPS 版本
   ],
@@ -140,8 +140,8 @@ async function startServer() {
     app.listen(PORT, () => {
       logger.info(`服务器运行在端口 ${PORT}`);
       console.log(`🚀 徐州旅游指南后端服务启动成功！`);
-      console.log(`📍 服务地址: http://localhost:${PORT}`);
-      console.log(`🏥 健康检查: http://localhost:${PORT}/api/health`);
+      console.log(`📍 服务地址: http://175.178.87.16:${PORT}`);
+      console.log(`🏥 健康检查: http://175.178.87.16:${PORT}/api/health`);
       if (isTestMode) {
         console.log(`⚠️  测试模式：数据库功能已禁用`);
       }
@@ -159,8 +159,8 @@ async function startServer() {
       app.listen(PORT, () => {
         logger.info(`服务器运行在端口 ${PORT} (测试模式)`);
         console.log(`🚀 徐州旅游指南后端服务启动成功！(测试模式)`);
-        console.log(`📍 服务地址: http://localhost:${PORT}`);
-        console.log(`🏥 健康检查: http://localhost:${PORT}/api/health`);
+        console.log(`📍 服务地址: http://175.178.87.16:${PORT}`);
+        console.log(`🏥 健康检查: http://175.178.87.16:${PORT}/api/health`);
         console.log(`⚠️  测试模式：数据库功能已禁用`);
       });
     }

@@ -5,7 +5,7 @@
  */
 
 // API 基础 URL
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://175.178.87.16:30001/api';
 
 // 通用请求方法
 const request = async (endpoint, options = {}) => {
