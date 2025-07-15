@@ -1,5 +1,17 @@
 // 徐州旅游指南应用 - 三个核心模块API功能演示脚本
+// 注意：此文件已更新为使用axios，但保留原始fetch示例作为参考
+import axios from 'axios';
+
 const BASE_URL = 'http://175.178.87.16:30001/api';
+
+// 创建axios实例
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 async function demonstrateFeatures() {
   console.log('🎯 徐州旅游指南应用 - 三个核心模块API功能演示');

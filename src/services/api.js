@@ -2,48 +2,37 @@
  * 徐州旅游指南 API 服务
  * 提供与后端 API 交互的方法
  * 已适配 MongoDB + Mongoose 后端
+ * 使用 axios 进行 HTTP 请求
  */
 
-// API 基础 URL
-const API_BASE_URL = 'http://175.178.87.16:30001/api';
+import { api, apiClient } from '../utils/axiosConfig.js';
 
-// 通用请求方法
+// 通用请求方法（保持向后兼容）
 const request = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers
-  };
-
-  const config = {
-    ...options,
-    headers
-  };
-
   try {
-    const response = await fetch(url, config);
-    const data = await response.json();
+    const method = (options.method || 'GET').toLowerCase();
+    let data = null;
 
-    if (!response.ok) {
-      throw {
-        status: response.status,
-        message: data.message || '请求失败',
-        data
-      };
+    if (options.body) {
+      data = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
     }
 
-    return data;
+    switch (method) {
+      case 'get':
+        return await api.get(endpoint, options);
+      case 'post':
+        return await api.post(endpoint, data, options);
+      case 'put':
+        return await api.put(endpoint, data, options);
+      case 'patch':
+        return await api.patch(endpoint, data, options);
+      case 'delete':
+        return await api.delete(endpoint, options);
+      default:
+        return await api.get(endpoint, options);
+    }
   } catch (error) {
     console.error('API 请求错误:', error);
-    // 如果是网络错误，提供更友好的错误信息
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw {
-        status: 0,
-        message: '无法连接到服务器，请检查后端服务是否启动',
-        data: null
-      };
-    }
     throw error;
   }
 };

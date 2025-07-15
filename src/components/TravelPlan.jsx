@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './TravelPlan.css';
 import { itineraryService } from '../services/itineraryService.js';
 import { performMigration, needsMigration, getMigrationStatus } from '../services/dataMigration.js';
+import { api, healthCheck } from '../utils/axiosConfig.js';
 
 const TravelPlan = () => {
   // 默认预算数据
@@ -92,9 +93,10 @@ const TravelPlan = () => {
   // 检查网络连接
   const checkConnection = async () => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/health');
-      return response.ok;
+      const result = await healthCheck();
+      return result.success;
     } catch (error) {
+      console.error('健康检查失败:', error);
       return false;
     }
   };
@@ -190,32 +192,26 @@ const TravelPlan = () => {
   // 从API加载预算数据
   const loadBudgetDataFromAPI = async () => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/budget');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data.items.length > 0) {
-          // 转换API数据格式为前端格式
-          const formattedData = result.data.items.map(item => ({
-            id: item.id,
-            category: item.category,
-            amount: parseFloat(item.recommended_amount || 0),
-            detail: item.description || item.item_name,
-            editable: true,
-            min_amount: parseFloat(item.min_amount || 0),
-            max_amount: parseFloat(item.max_amount || 0),
-            unit: item.unit || '元',
-            tips: item.tips || ''
-          }));
-          setBudgetData(formattedData);
-        } else {
-          setBudgetData(defaultBudgetData);
-        }
+      const result = await api.get('/budget');
+      if (result.status === 'success' && result.data.items.length > 0) {
+        // 转换API数据格式为前端格式
+        const formattedData = result.data.items.map(item => ({
+          id: item.id,
+          category: item.category,
+          amount: parseFloat(item.recommended_amount || 0),
+          detail: item.description || item.item_name,
+          editable: true,
+          min_amount: parseFloat(item.min_amount || 0),
+          max_amount: parseFloat(item.max_amount || 0),
+          unit: item.unit || '元',
+          tips: item.tips || ''
+        }));
+        setBudgetData(formattedData);
       } else {
-        console.error('Failed to load budget data from API');
-        loadBudgetData(); // 回退到本地数据
+        setBudgetData(defaultBudgetData);
       }
     } catch (error) {
-      console.error('Error loading budget data from API:', error);
+      console.error('从API加载预算数据失败:', error);
       loadBudgetData(); // 回退到本地数据
     }
   };
@@ -223,38 +219,29 @@ const TravelPlan = () => {
   // 创建新的预算参考项目
   const createBudgetItem = async (budgetData) => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/budget/reference', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          category: budgetData.category,
-          item_name: budgetData.item_name,
-          min_amount: budgetData.min_amount,
-          max_amount: budgetData.max_amount,
-          recommended_amount: budgetData.recommended_amount,
-          unit: budgetData.unit || '元',
-          description: budgetData.description,
-          tips: budgetData.tips,
-          is_essential: budgetData.is_essential || true
-        })
+      const result = await api.post('/budget/reference', {
+        category: budgetData.category,
+        item_name: budgetData.item_name,
+        min_amount: budgetData.min_amount,
+        max_amount: budgetData.max_amount,
+        recommended_amount: budgetData.recommended_amount,
+        unit: budgetData.unit || '元',
+        description: budgetData.description,
+        tips: budgetData.tips,
+        is_essential: budgetData.is_essential || true
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadBudgetDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return result.data;
-        }
+      if (result.status === 'success') {
+        await loadBudgetDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return result.data;
       } else {
-        throw new Error('Failed to create budget item');
+        throw new Error('创建预算项目失败');
       }
     } catch (error) {
-      console.error('Error creating budget item:', error);
-      setErrorMessage('创建预算项目失败，请重试');
+      console.error('创建预算项目失败:', error);
+      setErrorMessage(error.message || '创建预算项目失败，请重试');
       throw error;
     }
   };
@@ -262,28 +249,19 @@ const TravelPlan = () => {
   // 更新预算参考项目
   const updateBudgetItem = async (itemId, budgetData) => {
     try {
-      const response = await fetch(`http://175.178.87.16:30001/api/budget/reference/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(budgetData)
-      });
+      const result = await api.put(`/budget/reference/${itemId}`, budgetData);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadBudgetDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return result.data;
-        }
+      if (result.status === 'success') {
+        await loadBudgetDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return result.data;
       } else {
-        throw new Error('Failed to update budget item');
+        throw new Error('更新预算项目失败');
       }
     } catch (error) {
-      console.error('Error updating budget item:', error);
-      setErrorMessage('更新预算项目失败，请重试');
+      console.error('更新预算项目失败:', error);
+      setErrorMessage(error.message || '更新预算项目失败，请重试');
       throw error;
     }
   };
@@ -291,24 +269,19 @@ const TravelPlan = () => {
   // 删除预算参考项目
   const deleteBudgetItem = async (itemId) => {
     try {
-      const response = await fetch(`http://175.178.87.16:30001/api/budget/reference/${itemId}`, {
-        method: 'DELETE'
-      });
+      const result = await api.delete(`/budget/reference/${itemId}`);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadBudgetDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return true;
-        }
+      if (result.status === 'success') {
+        await loadBudgetDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return true;
       } else {
-        throw new Error('Failed to delete budget item');
+        throw new Error('删除预算项目失败');
       }
     } catch (error) {
-      console.error('Error deleting budget item:', error);
-      setErrorMessage('删除预算项目失败，请重试');
+      console.error('删除预算项目失败:', error);
+      setErrorMessage(error.message || '删除预算项目失败，请重试');
       throw error;
     }
   };
@@ -332,48 +305,42 @@ const TravelPlan = () => {
   // 从API加载实际支出数据
   const loadActualExpenseDataFromAPI = async () => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/expenses');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data.items.length > 0) {
-          // 按分类汇总支出数据
-          const categoryTotals = {};
-          result.data.items.forEach(item => {
-            if (!categoryTotals[item.category]) {
-              categoryTotals[item.category] = {
-                amount: 0,
-                details: [],
-                items: [],
-                count: 0
-              };
-            }
-            categoryTotals[item.category].amount += parseFloat(item.amount);
-            categoryTotals[item.category].details.push(item.description);
-            categoryTotals[item.category].items.push(item);
-            categoryTotals[item.category].count++;
-          });
+      const result = await api.get('/expenses');
+      if (result.status === 'success' && result.data.items.length > 0) {
+        // 按分类汇总支出数据
+        const categoryTotals = {};
+        result.data.items.forEach(item => {
+          if (!categoryTotals[item.category]) {
+            categoryTotals[item.category] = {
+              amount: 0,
+              details: [],
+              items: [],
+              count: 0
+            };
+          }
+          categoryTotals[item.category].amount += parseFloat(item.amount);
+          categoryTotals[item.category].details.push(item.description);
+          categoryTotals[item.category].items.push(item);
+          categoryTotals[item.category].count++;
+        });
 
-          // 转换为前端格式
-          const formattedData = Object.keys(categoryTotals).map((category) => ({
-            id: category.toLowerCase().replace(/\s+/g, ''),
-            category: category,
-            amount: categoryTotals[category].amount,
-            detail: categoryTotals[category].details.join(', '),
-            items: categoryTotals[category].items,
-            count: categoryTotals[category].count,
-            editable: true
-          }));
+        // 转换为前端格式
+        const formattedData = Object.keys(categoryTotals).map((category) => ({
+          id: category.toLowerCase().replace(/\s+/g, ''),
+          category: category,
+          amount: categoryTotals[category].amount,
+          detail: categoryTotals[category].details.join(', '),
+          items: categoryTotals[category].items,
+          count: categoryTotals[category].count,
+          editable: true
+        }));
 
-          setActualExpenseData(formattedData.length > 0 ? formattedData : getDefaultActualExpenseData());
-        } else {
-          setActualExpenseData(getDefaultActualExpenseData());
-        }
+        setActualExpenseData(formattedData.length > 0 ? formattedData : getDefaultActualExpenseData());
       } else {
-        console.error('Failed to load expense data from API');
-        loadActualExpenseData(); // 回退到本地数据
+        setActualExpenseData(getDefaultActualExpenseData());
       }
     } catch (error) {
-      console.error('Error loading expense data from API:', error);
+      console.error('从API加载实际支出数据失败:', error);
       loadActualExpenseData(); // 回退到本地数据
     }
   };
@@ -381,38 +348,29 @@ const TravelPlan = () => {
   // 创建新的支出记录
   const createExpenseItem = async (expenseData) => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/expenses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          category: expenseData.category,
-          amount: expenseData.amount,
-          description: expenseData.description,
-          date: expenseData.date || new Date().toISOString().split('T')[0],
-          time: expenseData.time || new Date().toTimeString().slice(0, 5),
-          location: expenseData.location || '',
-          payment_method: expenseData.payment_method || '其他',
-          notes: expenseData.notes || '',
-          is_planned: expenseData.is_planned || false
-        })
+      const result = await api.post('/expenses', {
+        category: expenseData.category,
+        amount: expenseData.amount,
+        description: expenseData.description,
+        date: expenseData.date || new Date().toISOString().split('T')[0],
+        time: expenseData.time || new Date().toTimeString().slice(0, 5),
+        location: expenseData.location || '',
+        payment_method: expenseData.payment_method || '其他',
+        notes: expenseData.notes || '',
+        is_planned: expenseData.is_planned || false
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadActualExpenseDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return result.data;
-        }
+      if (result.status === 'success') {
+        await loadActualExpenseDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return result.data;
       } else {
-        throw new Error('Failed to create expense item');
+        throw new Error('创建支出记录失败');
       }
     } catch (error) {
-      console.error('Error creating expense item:', error);
-      setErrorMessage('创建支出记录失败，请重试');
+      console.error('创建支出记录失败:', error);
+      setErrorMessage(error.message || '创建支出记录失败，请重试');
       throw error;
     }
   };
@@ -420,28 +378,19 @@ const TravelPlan = () => {
   // 更新支出记录
   const updateExpenseItem = async (itemId, expenseData) => {
     try {
-      const response = await fetch(`http://175.178.87.16:30001/api/expenses/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(expenseData)
-      });
+      const result = await api.put(`/expenses/${itemId}`, expenseData);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadActualExpenseDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return result.data;
-        }
+      if (result.status === 'success') {
+        await loadActualExpenseDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return result.data;
       } else {
-        throw new Error('Failed to update expense item');
+        throw new Error('更新支出记录失败');
       }
     } catch (error) {
-      console.error('Error updating expense item:', error);
-      setErrorMessage('更新支出记录失败，请重试');
+      console.error('更新支出记录失败:', error);
+      setErrorMessage(error.message || '更新支出记录失败，请重试');
       throw error;
     }
   };
@@ -449,24 +398,19 @@ const TravelPlan = () => {
   // 删除支出记录
   const deleteExpenseItem = async (itemId) => {
     try {
-      const response = await fetch(`http://175.178.87.16:30001/api/expenses/${itemId}`, {
-        method: 'DELETE'
-      });
+      const result = await api.delete(`/expenses/${itemId}`);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          await loadActualExpenseDataFromAPI(); // 重新加载数据
-          setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 2000);
-          return true;
-        }
+      if (result.status === 'success') {
+        await loadActualExpenseDataFromAPI(); // 重新加载数据
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+        return true;
       } else {
-        throw new Error('Failed to delete expense item');
+        throw new Error('删除支出记录失败');
       }
     } catch (error) {
-      console.error('Error deleting expense item:', error);
-      setErrorMessage('删除支出记录失败，请重试');
+      console.error('删除支出记录失败:', error);
+      setErrorMessage(error.message || '删除支出记录失败，请重试');
       throw error;
     }
   };

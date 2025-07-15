@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Weather.css';
+import { externalApi } from '../utils/axiosConfig.js';
 
 const Weather = () => {
   const [weatherData, setWeatherData] = useState(null);
@@ -45,28 +46,27 @@ const Weather = () => {
   const fetchWeatherFromOpenWeatherMap = async () => {
     const url = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=zh_cn`;
 
-    const response = await fetch(url);
+    try {
+      const data = await externalApi.get(url);
+      console.log('OpenWeatherMap API响应:', data);
 
-    if (!response.ok) {
-      throw new Error(`OpenWeatherMap API请求失败: ${response.status}`);
+      // 转换OpenWeatherMap数据格式为组件需要的格式
+      return {
+        temperature: Math.round(data.main.temp),
+        feelsLike: Math.round(data.main.feels_like),
+        description: data.weather[0].description,
+        humidity: data.main.humidity,
+        windSpeed: Math.round((data.wind?.speed || 0) * 10) / 10,
+        windDirection: data.wind?.deg || 0,
+        visibility: data.visibility ? Math.round((data.visibility / 1000) * 10) / 10 : 10, // 转换为公里
+        pressure: data.main.pressure,
+        icon: data.weather[0].icon,
+        cityName: data.name || CITY_NAME
+      };
+    } catch (error) {
+      console.error('OpenWeatherMap API请求失败:', error);
+      throw new Error(`天气API请求失败: ${error.message}`);
     }
-
-    const data = await response.json();
-    console.log('OpenWeatherMap API响应:', data);
-
-    // 转换OpenWeatherMap数据格式为组件需要的格式
-    return {
-      temperature: Math.round(data.main.temp),
-      feelsLike: Math.round(data.main.feels_like),
-      description: data.weather[0].description,
-      humidity: data.main.humidity,
-      windSpeed: Math.round((data.wind?.speed || 0) * 10) / 10,
-      windDirection: data.wind?.deg || 0,
-      visibility: data.visibility ? Math.round((data.visibility / 1000) * 10) / 10 : 10, // 转换为公里
-      pressure: data.main.pressure,
-      icon: data.weather[0].icon,
-      cityName: data.name || CITY_NAME
-    };
   };
 
   // 获取天气数据

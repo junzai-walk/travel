@@ -15,7 +15,7 @@ const isTestMode = process.env.NODE_ENV === 'test';
 // 中间件配置
 app.use(cors({
   origin: [
-    'http://175.178.87.16:5173',
+    'http://localhost:5173',
     'http://175.178.87.16:5174',
     'http://175.178.87.16:5175',
     'http://175.178.87.16:3000',

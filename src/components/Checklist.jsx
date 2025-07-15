@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Checklist.css';
+import { api } from '../utils/axiosConfig.js';
 
 const Checklist = () => {
   // 必备清单相关状态
@@ -23,28 +24,22 @@ const Checklist = () => {
   // 从API加载清单数据
   const loadChecklistData = async () => {
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/checklist');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data.items.length > 0) {
-          // 转换API数据格式为前端格式
-          const formattedData = result.data.items.map(item => ({
-            id: item.id,
-            item: item.item_name,
-            checked: item.is_completed,
-            category: item.category
-          }));
-          setChecklistData(formattedData);
-        } else {
-          // 如果没有数据，使用默认数据
-          setChecklistData(getDefaultChecklist());
-        }
+      const result = await api.get('/checklist');
+      if (result.status === 'success' && result.data.items.length > 0) {
+        // 转换API数据格式为前端格式
+        const formattedData = result.data.items.map(item => ({
+          id: item.id,
+          item: item.item_name,
+          checked: item.is_completed,
+          category: item.category
+        }));
+        setChecklistData(formattedData);
       } else {
-        console.error('Failed to load checklist data from API');
+        // 如果没有数据，使用默认数据
         setChecklistData(getDefaultChecklist());
       }
     } catch (error) {
-      console.error('Error loading checklist data from API:', error);
+      console.error('从API加载清单数据失败:', error);
       setChecklistData(getDefaultChecklist());
     }
   };
@@ -74,28 +69,17 @@ const Checklist = () => {
   // 切换清单项目的勾选状态
   const toggleChecklistItem = async (itemId) => {
     try {
-      const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}/toggle`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          // 更新本地状态
-          const newChecklistData = checklistData.map(item =>
-            item.id === itemId ? { ...item, checked: result.data.is_completed } : item
-          );
-          setChecklistData(newChecklistData);
-          showSaveMessageFunc();
-        }
-      } else {
-        console.error('Failed to toggle checklist item');
+      const result = await api.patch(`/checklist/${itemId}/toggle`);
+      if (result.status === 'success') {
+        // 更新本地状态
+        const newChecklistData = checklistData.map(item =>
+          item.id === itemId ? { ...item, checked: result.data.is_completed } : item
+        );
+        setChecklistData(newChecklistData);
+        showSaveMessageFunc();
       }
     } catch (error) {
-      console.error('Error toggling checklist item:', error);
+      console.error('切换清单项目状态失败:', error);
     }
   };
 
@@ -108,42 +92,32 @@ const Checklist = () => {
     }
 
     try {
-      const response = await fetch('http://175.178.87.16:30001/api/checklist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          item_name: newChecklistItem.trim(),
-          category: newItemCategory,
-          priority: '中',
-          is_completed: false,
-          notes: ''
-        })
+      const result = await api.post('/checklist', {
+        item_name: newChecklistItem.trim(),
+        category: newItemCategory,
+        priority: '中',
+        is_completed: false,
+        notes: ''
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          // 添加到本地状态
-          const newItem = {
-            id: result.data.id,
-            item: result.data.item_name,
-            checked: result.data.is_completed,
-            category: result.data.category
-          };
-          setChecklistData([...checklistData, newItem]);
-          setNewChecklistItem('');
-          setNewItemCategory('');
-          showSaveMessageFunc();
-        }
+      if (result.status === 'success') {
+        // 添加到本地状态
+        const newItem = {
+          id: result.data.id,
+          item: result.data.item_name,
+          checked: result.data.is_completed,
+          category: result.data.category
+        };
+        setChecklistData([...checklistData, newItem]);
+        setNewChecklistItem('');
+        setNewItemCategory('');
+        showSaveMessageFunc();
       } else {
-        console.error('Failed to add checklist item');
-        alert('添加失败，请重试');
+        throw new Error('添加清单项目失败');
       }
     } catch (error) {
-      console.error('Error adding checklist item:', error);
-      alert('添加失败，请重试');
+      console.error('添加清单项目失败:', error);
+      alert(error.message || '添加失败，请重试');
     }
   };
 
@@ -151,25 +125,18 @@ const Checklist = () => {
   const deleteChecklistItem = async (itemId) => {
     if (window.confirm('确定要删除这个物品吗？')) {
       try {
-        const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}`, {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === 'success') {
-            // 从本地状态中移除
-            const newChecklistData = checklistData.filter(item => item.id !== itemId);
-            setChecklistData(newChecklistData);
-            showSaveMessageFunc();
-          }
+        const result = await api.delete(`/checklist/${itemId}`);
+        if (result.status === 'success') {
+          // 从本地状态中移除
+          const newChecklistData = checklistData.filter(item => item.id !== itemId);
+          setChecklistData(newChecklistData);
+          showSaveMessageFunc();
         } else {
-          console.error('Failed to delete checklist item');
-          alert('删除失败，请重试');
+          throw new Error('删除清单项目失败');
         }
       } catch (error) {
-        console.error('Error deleting checklist item:', error);
-        alert('删除失败，请重试');
+        console.error('删除清单项目失败:', error);
+        alert(error.message || '删除失败，请重试');
       }
     }
   };
@@ -180,38 +147,28 @@ const Checklist = () => {
 
     try {
       const item = checklistData.find(item => item.id === itemId);
-      const response = await fetch(`http://175.178.87.16:30001/api/checklist/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          item_name: newText.trim(),
-          category: item.category,
-          priority: '中',
-          is_completed: item.checked,
-          notes: ''
-        })
+      const result = await api.put(`/checklist/${itemId}`, {
+        item_name: newText.trim(),
+        category: item.category,
+        priority: '中',
+        is_completed: item.checked,
+        notes: ''
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          // 更新本地状态
-          const newChecklistData = checklistData.map(item =>
-            item.id === itemId ? { ...item, item: newText.trim() } : item
-          );
-          setChecklistData(newChecklistData);
-          setEditingChecklistItem(null);
-          showSaveMessageFunc();
-        }
+      if (result.status === 'success') {
+        // 更新本地状态
+        const newChecklistData = checklistData.map(item =>
+          item.id === itemId ? { ...item, item: newText.trim() } : item
+        );
+        setChecklistData(newChecklistData);
+        setEditingChecklistItem(null);
+        showSaveMessageFunc();
       } else {
-        console.error('Failed to edit checklist item');
-        alert('编辑失败，请重试');
+        throw new Error('编辑清单项目失败');
       }
     } catch (error) {
-      console.error('Error editing checklist item:', error);
-      alert('编辑失败，请重试');
+      console.error('编辑清单项目失败:', error);
+      alert(error.message || '编辑失败，请重试');
     }
   };
 
@@ -221,17 +178,15 @@ const Checklist = () => {
       try {
         // 首先删除所有现有数据
         for (const item of checklistData) {
-          await fetch(`http://175.178.87.16:30001/api/checklist/${item.id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/checklist/${item.id}`);
         }
 
         // 重新加载默认数据
         await loadChecklistData();
         showSaveMessageFunc();
       } catch (error) {
-        console.error('Error resetting checklist:', error);
-        alert('重置失败，请重试');
+        console.error('重置清单失败:', error);
+        alert(error.message || '重置失败，请重试');
       }
     }
   };
