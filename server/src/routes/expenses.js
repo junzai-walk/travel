@@ -146,7 +146,7 @@ router.get('/:id', idValidation, validateRequest, catchAsync(async (req, res) =>
 
 // POST /api/expenses - 创建新的支出记录
 router.post('/', expensesValidation, validateRequest, catchAsync(async (req, res) => {
-  const { 
+  const {
     category,
     amount,
     description,
@@ -160,15 +160,8 @@ router.post('/', expensesValidation, validateRequest, catchAsync(async (req, res
     budget_reference_id
   } = req.body;
 
-  // 验证预算参考ID是否存在
-  if (budget_reference_id) {
-    const budgetRef = await BudgetReference.findByPk(budget_reference_id);
-    if (!budgetRef) {
-      throw new AppError('关联的预算参考不存在', 400);
-    }
-  }
-
-  const newItem = await Expenses.create({
+  // 详细日志记录请求数据
+  logger.info('创建支出记录请求数据:', {
     category,
     amount,
     description,
@@ -179,16 +172,52 @@ router.post('/', expensesValidation, validateRequest, catchAsync(async (req, res
     receipt_number,
     notes,
     is_planned,
-    budget_reference_id
+    budget_reference_id,
+    dateType: typeof date,
+    amountType: typeof amount
   });
 
-  logger.info(`创建新支出记录，ID: ${newItem.id}, 金额: ${amount}`);
+  // 验证预算参考ID是否存在
+  if (budget_reference_id) {
+    logger.info(`验证预算参考ID: ${budget_reference_id}`);
+    const budgetRef = await BudgetReference.findByPk(budget_reference_id);
+    if (!budgetRef) {
+      logger.error(`预算参考ID不存在: ${budget_reference_id}`);
+      throw new AppError('关联的预算参考不存在', 400);
+    }
+    logger.info(`预算参考验证成功: ${budgetRef.item_name}`);
+  }
 
-  res.status(201).json({
-    status: 'success',
-    message: '创建支出记录成功',
-    data: newItem
-  });
+  try {
+    const newItem = await Expenses.create({
+      category,
+      amount,
+      description,
+      date,
+      time,
+      location,
+      payment_method,
+      receipt_number,
+      notes,
+      is_planned,
+      budget_reference_id
+    });
+
+    logger.info(`创建新支出记录成功，ID: ${newItem.id}, 金额: ${amount}, 日期: ${date}`);
+
+    res.status(201).json({
+      status: 'success',
+      message: '创建支出记录成功',
+      data: newItem
+    });
+  } catch (error) {
+    logger.error('创建支出记录失败:', {
+      error: error.message,
+      stack: error.stack,
+      requestData: { category, amount, description, date, time, location, payment_method }
+    });
+    throw error;
+  }
 }));
 
 // PUT /api/expenses/:id - 更新支出记录

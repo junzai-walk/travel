@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import { Activities } from '../models/index.js';
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import { validateRequest } from '../middleware/validation.js';
@@ -155,7 +155,8 @@ router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, r
     opening_hours
   } = req.body;
 
-  const newItem = await Activities.create({
+  // 详细日志记录请求数据
+  logger.info('创建活动规划请求数据:', {
     title,
     category,
     description,
@@ -166,16 +167,43 @@ router.post('/', activitiesValidation, validateRequest, catchAsync(async (req, r
     season_suitable,
     tips,
     contact_info,
-    opening_hours
+    opening_hours,
+    titleType: typeof title,
+    categoryType: typeof category,
+    costType: typeof estimated_cost,
+    durationtype: typeof estimated_duration
   });
 
-  logger.info(`创建新活动规划，ID: ${newItem.id}, 标题: ${title}`);
+  try {
+    const newItem = await Activities.create({
+      title,
+      category,
+      description,
+      location,
+      estimated_cost,
+      estimated_duration,
+      priority,
+      season_suitable,
+      tips,
+      contact_info,
+      opening_hours
+    });
 
-  res.status(201).json({
-    status: 'success',
-    message: '创建活动规划成功',
-    data: newItem
-  });
+    logger.info(`创建新活动规划成功，ID: ${newItem.id}, 标题: ${title}, 分类: ${category}`);
+
+    res.status(201).json({
+      status: 'success',
+      message: '创建活动规划成功',
+      data: newItem
+    });
+  } catch (error) {
+    logger.error('创建活动规划失败:', {
+      error: error.message,
+      stack: error.stack,
+      requestData: { title, category, description, location, estimated_cost, estimated_duration, priority }
+    });
+    throw error;
+  }
 }));
 
 // PUT /api/activities/:id - 更新指定活动规划
@@ -258,33 +286,31 @@ router.delete('/:id', idValidation, validateRequest, catchAsync(async (req, res)
 
 // GET /api/activities/stats/categories - 获取活动分类统计
 router.get('/stats/categories', catchAsync(async (req, res) => {
-  const stats = await Activities.aggregate([
-    {
-      $group: {
-        _id: '$category',
-        count: { $sum: 1 },
-        avg_cost: { $avg: '$estimated_cost' }
-      }
-    },
-    {
-      $sort: { count: -1 }
-    },
-    {
-      $project: {
-        category: '$_id',
-        count: 1,
-        avg_cost: { $round: ['$avg_cost', 2] },
-        _id: 0
-      }
-    }
-  ]);
+  // 使用Sequelize的聚合查询替代MongoDB的aggregate
+  const stats = await Activities.findAll({
+    attributes: [
+      'category',
+      [fn('COUNT', col('id')), 'count'],
+      [fn('AVG', col('estimated_cost')), 'avg_cost']
+    ],
+    group: ['category'],
+    order: [[fn('COUNT', col('id')), 'DESC']],
+    raw: true
+  });
+
+  // 格式化数据，保留两位小数
+  const formattedStats = stats.map(item => ({
+    category: item.category,
+    count: parseInt(item.count),
+    avg_cost: item.avg_cost ? parseFloat(parseFloat(item.avg_cost).toFixed(2)) : 0
+  }));
 
   logger.info('获取活动分类统计');
 
   res.json({
     status: 'success',
     message: '获取活动分类统计成功',
-    data: stats
+    data: formattedStats
   });
 }));
 

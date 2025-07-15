@@ -176,25 +176,56 @@ const Expenses = sequelize.define('Expenses', {
 // 添加实例方法
 Expenses.prototype.toJSON = function() {
   const values = Object.assign({}, this.get());
+
   // 格式化日期为 YYYY-MM-DD
   if (values.date) {
-    // 检查是否已经是Date对象，如果不是则转换
-    if (values.date instanceof Date) {
-      values.date = values.date.toISOString().split('T')[0];
-    } else if (typeof values.date === 'string') {
-      // 如果是字符串，尝试解析为Date对象再格式化
-      try {
+    try {
+      // 检查是否已经是Date对象
+      if (values.date instanceof Date) {
+        // 确保Date对象是有效的
+        if (!isNaN(values.date.getTime())) {
+          values.date = values.date.toISOString().split('T')[0];
+        } else {
+          console.warn('Expenses toJSON: 无效的Date对象:', values.date);
+          values.date = new Date().toISOString().split('T')[0]; // 使用当前日期作为默认值
+        }
+      } else if (typeof values.date === 'string') {
+        // 如果是字符串，检查是否已经是YYYY-MM-DD格式
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(values.date)) {
+          // 已经是正确格式，保持不变
+          // 但验证一下是否是有效日期
+          const testDate = new Date(values.date);
+          if (isNaN(testDate.getTime())) {
+            console.warn('Expenses toJSON: 无效的日期字符串:', values.date);
+            values.date = new Date().toISOString().split('T')[0];
+          }
+        } else {
+          // 尝试解析为Date对象再格式化
+          const dateObj = new Date(values.date);
+          if (!isNaN(dateObj.getTime())) {
+            values.date = dateObj.toISOString().split('T')[0];
+          } else {
+            console.warn('Expenses toJSON: 无法解析的日期字符串:', values.date);
+            values.date = new Date().toISOString().split('T')[0];
+          }
+        }
+      } else {
+        // 其他类型，尝试转换为Date
+        console.warn('Expenses toJSON: 意外的日期类型:', typeof values.date, values.date);
         const dateObj = new Date(values.date);
         if (!isNaN(dateObj.getTime())) {
           values.date = dateObj.toISOString().split('T')[0];
+        } else {
+          values.date = new Date().toISOString().split('T')[0];
         }
-        // 如果已经是YYYY-MM-DD格式，保持不变
-      } catch (error) {
-        // 如果转换失败，保持原值
-        console.warn('日期格式转换失败:', values.date, error);
       }
+    } catch (error) {
+      console.error('Expenses toJSON: 日期格式转换失败:', values.date, error);
+      values.date = new Date().toISOString().split('T')[0]; // 使用当前日期作为默认值
     }
   }
+
   return values;
 };
 

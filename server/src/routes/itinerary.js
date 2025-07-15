@@ -87,7 +87,7 @@ router.get('/', catchAsync(async (req, res) => {
   // 获取总数和数据
   const { count: total, rows: items } = await Itinerary.findAndCountAll({
     where,
-    order: [['date', 'ASC'], ['time', 'ASC']],
+    order: [['date', 'ASC'], ['time', 'ASC'], ['created_at', 'ASC']],
     limit: limitNum,
     offset
   });

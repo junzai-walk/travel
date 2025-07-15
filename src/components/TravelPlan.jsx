@@ -3,6 +3,7 @@ import './TravelPlan.css';
 import { itineraryService } from '../services/itineraryService.js';
 import { performMigration, needsMigration, getMigrationStatus } from '../services/dataMigration.js';
 import { api, healthCheck } from '../utils/axiosConfig.js';
+import { validateExpenseData, validateItineraryData } from '../utils/dataValidation.js';
 
 const TravelPlan = () => {
   // 默认预算数据
@@ -348,17 +349,10 @@ const TravelPlan = () => {
   // 创建新的支出记录
   const createExpenseItem = async (expenseData) => {
     try {
-      const result = await api.post('/expenses', {
-        category: expenseData.category,
-        amount: expenseData.amount,
-        description: expenseData.description,
-        date: expenseData.date || new Date().toISOString().split('T')[0],
-        time: expenseData.time || new Date().toTimeString().slice(0, 5),
-        location: expenseData.location || '',
-        payment_method: expenseData.payment_method || '其他',
-        notes: expenseData.notes || '',
-        is_planned: expenseData.is_planned || false
-      });
+      // 使用数据验证工具确保数据格式正确
+      const validatedData = validateExpenseData(expenseData);
+
+      const result = await api.post('/expenses', validatedData);
 
       if (result.status === 'success') {
         await loadActualExpenseDataFromAPI(); // 重新加载数据
@@ -378,7 +372,10 @@ const TravelPlan = () => {
   // 更新支出记录
   const updateExpenseItem = async (itemId, expenseData) => {
     try {
-      const result = await api.put(`/expenses/${itemId}`, expenseData);
+      // 使用数据验证工具确保数据格式正确
+      const validatedData = validateExpenseData(expenseData);
+
+      const result = await api.put(`/expenses/${itemId}`, validatedData);
 
       if (result.status === 'success') {
         await loadActualExpenseDataFromAPI(); // 重新加载数据
@@ -756,21 +753,43 @@ const TravelPlan = () => {
   };
 
   // 保存预算备注编辑
-  const saveBudgetDetailEdit = (itemId) => {
+  const saveBudgetDetailEdit = async (itemId) => {
     if (editingBudgetDetailValue.trim() === '') {
       setErrorMessage('备注不能为空');
       return;
     }
 
-    // 更新数据
-    const newBudgetData = budgetData.map(item =>
-      item.id === itemId ? { ...item, detail: editingBudgetDetailValue.trim() } : item
-    );
+    try {
+      // 找到要更新的项目
+      const item = budgetData.find(item => item.id === itemId);
+      if (!item) {
+        setErrorMessage('找不到要更新的预算项目');
+        return;
+      }
 
-    saveBudgetData(newBudgetData);
-    setEditingBudgetDetail(null);
-    setEditingBudgetDetailValue('');
-    setErrorMessage('');
+      // 准备更新数据，保持原有字段并更新description
+      const updateData = {
+        category: item.category,
+        item_name: item.detail || item.category,
+        min_amount: item.min_amount || 0,
+        max_amount: item.max_amount || item.amount,
+        recommended_amount: item.amount,
+        unit: item.unit || '元',
+        description: editingBudgetDetailValue.trim(), // 更新description字段
+        tips: item.tips || '',
+        is_essential: true
+      };
+
+      // 调用API更新数据库
+      await updateBudgetItem(itemId, updateData);
+
+      setEditingBudgetDetail(null);
+      setEditingBudgetDetailValue('');
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在updateBudgetItem中处理
+      console.error('保存预算备注失败:', error);
+    }
   };
 
   // 处理预算备注编辑的键盘事件
@@ -779,6 +798,23 @@ const TravelPlan = () => {
       saveBudgetDetailEdit(itemId);
     } else if (e.key === 'Escape') {
       cancelEditingBudgetDetail();
+    }
+  };
+
+  // 处理删除预算项目
+  const handleDeleteBudgetItem = async (itemId) => {
+    const item = budgetData.find(item => item.id === itemId);
+    const itemName = item ? item.category : '该项目';
+
+    if (window.confirm(`确定要删除"${itemName}"吗？此操作不可撤销。`)) {
+      try {
+        await deleteBudgetItem(itemId);
+        setShowSaveMessage(true);
+        setTimeout(() => setShowSaveMessage(false), 2000);
+      } catch (error) {
+        // 错误已在deleteBudgetItem中处理
+        console.error('删除预算项目失败:', error);
+      }
     }
   };
 
@@ -1199,6 +1235,21 @@ const TravelPlan = () => {
 
 
 
+  // 标准化活动对象，确保包含所有必需字段
+  const normalizeActivity = (activity) => {
+    return {
+      time: activity.time || '09:00',
+      activity: activity.activity || '新活动',
+      description: activity.description || '',
+      tips: activity.tips || '',
+      icon: activity.icon || '📍',
+      location: activity.location || '',
+      duration: activity.duration || 60, // 默认60分钟
+      status: activity.status || '计划中',
+      originalDate: activity.originalDate
+    };
+  };
+
   // 获取默认行程数据
   const getDefaultItinerary = () => {
     // 计算默认日期（从今天开始的周五）
@@ -1226,46 +1277,56 @@ const TravelPlan = () => {
       title: '出发日 - 南京到徐州',
       originalDate: formatDate(fridayDate), // 添加原始日期
       activities: [
-        {
+        normalizeActivity({
           time: '19:30',
           activity: '南京南站集合',
           description: '提前1小时到达，取票安检',
           tips: 'G2700次高铁，建议提前网上购票',
           icon: '🚄',
-          originalDate: formatDate(fridayDate) // 添加原始日期
-        },
-        {
+          location: '南京南站',
+          duration: 30,
+          originalDate: formatDate(fridayDate)
+        }),
+        normalizeActivity({
           time: '20:31',
           activity: '乘坐高铁G2700',
           description: '南京南 → 徐州东，约1小时34分钟',
           tips: '可以在车上休息，准备第二天的行程',
           icon: '🚄',
+          location: '高铁上',
+          duration: 94,
           originalDate: formatDate(fridayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '22:05',
           activity: '到达徐州东站',
           description: '出站后乘坐地铁或打车前往酒店',
           tips: '地铁1号线可直达市区，约30分钟',
           icon: '🏨',
+          location: '徐州东站',
+          duration: 35,
           originalDate: formatDate(fridayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '22:40',
           activity: '季末轻居酒店入住',
           description: '办理入住手续，稍作休息',
           tips: '酒店位于人民广场地铁站附近，交通便利',
           icon: '🛏️',
+          location: '季末轻居酒店',
+          duration: 20,
           originalDate: formatDate(fridayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '23:00',
           activity: '附近觅食',
           description: '寻找附近的夜宵或小吃',
           tips: '可以尝试徐州烙馍或羊肉汤',
           icon: '🍜',
+          location: '酒店附近',
+          duration: 60,
           originalDate: formatDate(fridayDate)
-        }
+        })
       ]
     },
     {
@@ -1274,62 +1335,76 @@ const TravelPlan = () => {
       title: '徐州深度游',
       originalDate: formatDate(saturdayDate), // 添加原始日期
       activities: [
-        {
+        normalizeActivity({
           time: '08:00',
           activity: '酒店早餐',
           description: '享用丰盛的早餐，为一天的行程做准备',
           tips: '如果酒店没有早餐，可以去附近吃羊肉汤',
           icon: '🥐',
+          location: '季末轻居酒店',
+          duration: 60,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '09:00',
           activity: '云龙湖风景区',
           description: '徐州最美的景点，湖光山色，适合散步拍照',
           tips: '建议租借共享单车环湖，约2-3小时',
           icon: '🌊',
+          location: '云龙湖风景区',
+          duration: 180,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '12:00',
           activity: '湖边午餐',
           description: '在云龙湖附近的餐厅享用午餐',
           tips: '推荐淮海食府，环境好适合情侣',
           icon: '🍽️',
+          location: '淮海食府',
+          duration: 120,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '14:00',
           activity: '彭祖园',
           description: '了解徐州历史文化，园林景观优美',
           tips: '适合慢慢游览，拍照留念',
           icon: '🏛️',
+          location: '彭祖园',
+          duration: 120,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '16:00',
           activity: '马市街小吃街',
           description: '品尝各种徐州特色小吃',
           tips: '不要吃太饱，留肚子尝试更多美食',
           icon: '🍡',
+          location: '马市街小吃街',
+          duration: 120,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '18:00',
           activity: '徐州博物馆',
           description: '了解徐州深厚的历史文化',
           tips: '周六延长开放时间，可以慢慢参观',
           icon: '🏛️',
+          location: '徐州博物馆',
+          duration: 120,
           originalDate: formatDate(saturdayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '20:00',
           activity: '晚餐时光',
           description: '选择一家有特色的餐厅享用晚餐',
           tips: '可以选择有情调的餐厅，增进感情',
           icon: '🍷',
+          location: '市中心餐厅',
+          duration: 120,
           originalDate: formatDate(saturdayDate)
-        }
+        })
       ]
     },
     {
@@ -1338,62 +1413,76 @@ const TravelPlan = () => {
       title: '返程日 - 轻松游览',
       originalDate: formatDate(sundayDate), // 添加原始日期
       activities: [
-        {
+        normalizeActivity({
           time: '09:00',
           activity: '酒店退房',
           description: '整理行李，办理退房手续',
           tips: '可以把行李寄存在酒店，轻松游览',
           icon: '🧳',
+          location: '季末轻居酒店',
+          duration: 30,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '09:30',
           activity: '户部山古建筑群',
           description: '徐州历史文化街区，古色古香',
           tips: '适合拍照，了解徐州传统建筑',
           icon: '🏘️',
+          location: '户部山古建筑群',
+          duration: 90,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '11:00',
           activity: '购买特产',
           description: '购买徐州特产作为伴手礼',
           tips: '蜜三刀、牛蒡茶都是不错的选择',
           icon: '🛍️',
+          location: '特产店',
+          duration: 60,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '12:00',
           activity: '最后一餐',
           description: '享用徐州的最后一顿美食',
           tips: '可以再次品尝最喜欢的徐州菜',
           icon: '🍜',
+          location: '徐州餐厅',
+          duration: 90,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '14:30',
           activity: '前往徐州站',
           description: '取行李，前往徐州站（注意是徐州站不是徐州东站）',
           tips: '预留充足时间，K347次火车从徐州站发车',
           icon: '🚇',
+          location: '徐州站',
+          duration: 68,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '15:38',
           activity: '返程火车K347',
           description: '徐州站 → 南京站，约4小时13分钟',
           tips: '可以在车上整理照片，回味旅程',
           icon: '🚄',
+          location: '火车上',
+          duration: 253,
           originalDate: formatDate(sundayDate)
-        },
-        {
+        }),
+        normalizeActivity({
           time: '19:51',
           activity: '到达南京站',
           description: '愉快的徐州之旅结束',
           tips: '记得分享旅行的美好回忆',
           icon: '🏠',
+          location: '南京站',
+          duration: 30,
           originalDate: formatDate(sundayDate)
-        }
+        })
       ]
     }
   ];
@@ -1461,6 +1550,9 @@ const TravelPlan = () => {
         description: '请编辑活动描述',
         tips: '请添加小贴士',
         icon: '📍',
+        location: '',
+        duration: 60, // 默认60分钟
+        status: '计划中',
         originalDate: activityDate // 使用调整后的日期
       };
 
@@ -2429,14 +2521,25 @@ const TravelPlan = () => {
                                 )}
                               </div>
                             ) : (
-                              <p
-                                className="card-text text-muted small editable-field"
-                                style={{cursor: 'pointer'}}
-                                onClick={() => startEditingBudgetDetail(item.id, item.detail)}
-                                title="点击编辑备注"
-                              >
-                                {item.detail}
-                              </p>
+                              <div>
+                                <p
+                                  className="card-text text-muted small editable-field"
+                                  style={{cursor: 'pointer'}}
+                                  onClick={() => startEditingBudgetDetail(item.id, item.detail)}
+                                  title="点击编辑备注"
+                                >
+                                  {item.detail}
+                                </p>
+                                <div className="d-flex justify-content-end mt-2">
+                                  <button
+                                    className="btn btn-outline-danger btn-sm"
+                                    onClick={() => handleDeleteBudgetItem(item.id)}
+                                    title="删除此预算项目"
+                                  >
+                                    🗑️ 删除
+                                  </button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>

@@ -4,6 +4,7 @@
  */
 
 import { itineraryAPI } from './api.js';
+import { validateItineraryData } from '../utils/dataValidation.js';
 
 // 默认图标映射
 const DEFAULT_ICONS = {
@@ -60,7 +61,19 @@ export const transformBackendToFrontend = (backendData) => {
     .sort()
     .map((dateKey, index) => {
       const activities = groupedByDate[dateKey]
-        .sort((a, b) => a.time.localeCompare(b.time))
+        .sort((a, b) => {
+          // 首先按时间排序，然后按创建时间排序（保持添加顺序）
+          const timeCompare = a.time.localeCompare(b.time);
+          if (timeCompare !== 0) {
+            return timeCompare;
+          }
+          // 如果时间相同，按创建时间排序（新添加的在后面）
+          if (a.created_at && b.created_at) {
+            return new Date(a.created_at) - new Date(b.created_at);
+          }
+          // 如果没有创建时间，按ID排序（新的ID通常更大）
+          return (a.id || 0) - (b.id || 0);
+        })
         .map(item => ({
           id: item.id, // 保存后端ID用于更新和删除
           time: item.time,
@@ -122,16 +135,20 @@ export const transformFrontendToBackend = (frontendData, preserveOriginalDates =
     }
 
     day.activities.forEach(activity => {
-      const backendItem = {
+      // 使用数据验证工具确保数据格式正确
+      const rawData = {
         date: activity.originalDate || dateString, // 优先使用活动的原始日期
         time: activity.time,
         activity: activity.activity,
         description: activity.description || '',
         tips: activity.tips || '',
         location: activity.location || '',
-        duration: activity.duration || null,
+        duration: activity.duration, // 让验证工具处理null值
         status: activity.status || '计划中'
       };
+
+      // 验证并格式化数据
+      const backendItem = validateItineraryData(rawData);
 
       // 如果有ID，说明是更新操作
       if (activity.id) {

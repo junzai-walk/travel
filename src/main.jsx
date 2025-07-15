@@ -6,8 +6,10 @@ import App from './App.jsx'
 
 // 在开发环境中加载测试工具
 if (import.meta.env.DEV) {
-  import('./utils/testAxiosConfig.js').then(() => {
-    console.log('🔧 开发环境：Axios测试工具已加载');
+  import('./utils/apiTestFix.js').then(() => {
+    console.log('🔧 开发环境：API修复测试工具已加载');
+  }).catch(error => {
+    console.warn('⚠️ 测试工具加载失败:', error.message);
   });
 }
 
