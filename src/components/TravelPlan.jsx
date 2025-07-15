@@ -848,33 +848,59 @@ const TravelPlan = () => {
     }
 
     try {
-      // 找到要更新的项目
-      const item = actualExpenseData.find(item => item.id === itemId);
-      if (!item) {
-        setErrorMessage('找不到要更新的支出记录');
+      // 找到要更新的分类项目
+      const categoryItem = actualExpenseData.find(item => item.id === itemId);
+      if (!categoryItem) {
+        setErrorMessage('找不到要更新的支出分类');
         return;
       }
 
-      // 创建新的支出记录而不是更新现有记录
-      const expenseData = {
-        category: item.category,
-        amount: numValue,
-        description: `${item.category}支出`,
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
-        payment_method: '其他',
-        notes: `更新的${item.category}支出记录`,
-        is_planned: false
-      };
+      // 如果该分类有现有记录，更新最新的一条记录
+      if (categoryItem.items && categoryItem.items.length > 0) {
+        // 获取最新的记录（按创建时间排序，取最后一个）
+        const latestItem = categoryItem.items.sort((a, b) =>
+          new Date(b.created_at) - new Date(a.created_at)
+        )[0];
 
-      // 调用API创建新记录
-      await createExpenseItem(expenseData);
+        // 准备更新数据
+        const expenseData = {
+          category: latestItem.category,
+          amount: numValue,
+          description: latestItem.description,
+          date: latestItem.date,
+          time: latestItem.time,
+          location: latestItem.location || '',
+          payment_method: latestItem.payment_method || '其他',
+          receipt_number: latestItem.receipt_number || '',
+          notes: latestItem.notes || '',
+          is_planned: latestItem.is_planned || false
+        };
+
+        // 调用API更新现有记录
+        await updateExpenseItem(latestItem.id, expenseData);
+      } else {
+        // 如果没有现有记录，创建新记录
+        const expenseData = {
+          category: categoryItem.category,
+          amount: numValue,
+          description: `${categoryItem.category}支出`,
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().slice(0, 5),
+          payment_method: '其他',
+          receipt_number: '',
+          notes: `${categoryItem.category}支出记录`,
+          is_planned: false
+        };
+
+        await createExpenseItem(expenseData);
+      }
 
       setEditingActualExpense(null);
       setEditingActualExpenseValue('');
       setErrorMessage('');
     } catch (error) {
-      // 错误已在createExpenseItem中处理
+      // 错误已在updateExpenseItem或createExpenseItem中处理
+      console.error('保存实际消费编辑失败:', error);
     }
   };
 
@@ -923,21 +949,67 @@ const TravelPlan = () => {
   };
 
   // 保存实际消费详细说明编辑
-  const saveActualExpenseDetailEdit = (itemId) => {
+  const saveActualExpenseDetailEdit = async (itemId) => {
     if (editingActualExpenseDetailValue.trim() === '') {
       setErrorMessage('说明不能为空');
       return;
     }
 
-    // 更新数据
-    const newActualExpenseData = actualExpenseData.map(item =>
-      item.id === itemId ? { ...item, detail: editingActualExpenseDetailValue.trim() } : item
-    );
+    try {
+      // 找到要更新的分类项目
+      const categoryItem = actualExpenseData.find(item => item.id === itemId);
+      if (!categoryItem) {
+        setErrorMessage('找不到要更新的支出分类');
+        return;
+      }
 
-    saveActualExpenseData(newActualExpenseData);
-    setEditingActualExpenseDetail(null);
-    setEditingActualExpenseDetailValue('');
-    setErrorMessage('');
+      // 如果该分类有现有记录，更新最新的一条记录
+      if (categoryItem.items && categoryItem.items.length > 0) {
+        // 获取最新的记录（按创建时间排序，取最后一个）
+        const latestItem = categoryItem.items.sort((a, b) =>
+          new Date(b.created_at) - new Date(a.created_at)
+        )[0];
+
+        // 准备更新数据，只更新description字段
+        const expenseData = {
+          category: latestItem.category,
+          amount: latestItem.amount,
+          description: editingActualExpenseDetailValue.trim(),
+          date: latestItem.date,
+          time: latestItem.time,
+          location: latestItem.location || '',
+          payment_method: latestItem.payment_method || '其他',
+          receipt_number: latestItem.receipt_number || '',
+          notes: latestItem.notes || '',
+          is_planned: latestItem.is_planned || false
+        };
+
+        // 调用API更新现有记录
+        await updateExpenseItem(latestItem.id, expenseData);
+      } else {
+        // 如果没有现有记录，创建新记录
+        const expenseData = {
+          category: categoryItem.category,
+          amount: 0,
+          description: editingActualExpenseDetailValue.trim(),
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().slice(0, 5),
+          payment_method: '其他',
+          receipt_number: '',
+          notes: `${categoryItem.category}支出记录`,
+          is_planned: false
+        };
+
+        await createExpenseItem(expenseData);
+      }
+
+      setEditingActualExpenseDetail(null);
+      setEditingActualExpenseDetailValue('');
+      setErrorMessage('');
+    } catch (error) {
+      // 错误已在updateExpenseItem或createExpenseItem中处理
+      console.error('保存实际消费详细说明失败:', error);
+    }
   };
 
   // 处理实际消费详细说明编辑的键盘事件
