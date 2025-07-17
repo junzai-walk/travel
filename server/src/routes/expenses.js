@@ -19,8 +19,8 @@ const expensesValidation = [
   body('description')
     .notEmpty()
     .withMessage('支出描述不能为空')
-    .isLength({ min: 1, max: 300 })
-    .withMessage('支出描述长度必须在1-300字符之间'),
+    .isLength({ min: 1, max: 1000 })
+    .withMessage('支出描述长度必须在1-1000字符之间'),
   body('date')
     .isISO8601()
     .withMessage('请输入有效的日期格式(YYYY-MM-DD)'),
@@ -41,8 +41,8 @@ const expensesValidation = [
     .withMessage('收据/发票号码不能超过100字符'),
   body('notes')
     .optional()
-    .isLength({ max: 1000 })
-    .withMessage('备注信息不能超过1000字符'),
+    .isLength({ max: 2000 })
+    .withMessage('备注信息不能超过2000字符'),
   body('is_planned')
     .optional()
     .isBoolean()

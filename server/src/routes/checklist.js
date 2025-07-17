@@ -15,7 +15,7 @@ const checklistValidation = [
     .isLength({ min: 1, max: 200 })
     .withMessage('清单项目名称长度必须在1-200字符之间'),
   body('category')
-    .isIn(['证件类', '衣物类', '电子设备', '洗护用品', '药品类', '日常用品', '其他'])
+    .isIn(['证件类', '衣物类', '电子设备', '洗护用品',  '日常用品', '财务类', '医疗用品', '食物类'])
     .withMessage('清单项目分类必须是有效的分类'),
   body('priority')
     .optional()

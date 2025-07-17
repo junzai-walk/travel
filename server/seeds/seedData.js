@@ -14,7 +14,6 @@ const defaultChecklistData = [
   { item_name: '现金和银行卡', category: '证件类', priority: '高', is_completed: false, notes: '' },
   { item_name: '冰水', category: '其他', priority: '中', is_completed: false, notes: '' },
   { item_name: '雨伞', category: '其他', priority: '低', is_completed: false, notes: '' },
-  { item_name: '常用药品', category: '药品类', priority: '中', is_completed: false, notes: '' },
   { item_name: '零食和水', category: '其他', priority: '低', is_completed: false, notes: '' },
   { item_name: '牙具', category: '洗护用品', priority: '低', is_completed: false, notes: '' },
   { item_name: '水乳、补水喷雾', category: '洗护用品', priority: '低', is_completed: false, notes: '' },

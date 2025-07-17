@@ -1,0 +1,143 @@
+/* 富文本编辑器样式 */
+.rich-text-editor {
+  position: relative;
+}
+
+/* 富文本输入框样式 */
+.rich-text-input {
+  resize: vertical;
+  overflow-y: auto;
+  line-height: 1.5;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.rich-text-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 占位符样式 */
+.rich-text-input:empty:before {
+  content: attr(data-placeholder);
+  color: #6c757d;
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* 工具栏样式 */
+.format-toolbar {
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa !important;
+}
+
+.format-toolbar .btn {
+  border-radius: 0.25rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.format-toolbar .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 颜色按钮样式 */
+.color-btn {
+  border-radius: 50% !important;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-btn:active {
+  transform: scale(0.95);
+}
+
+/* 禁用状态样式 */
+.rich-text-input[contenteditable="false"] {
+  background-color: #e9ecef;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .format-toolbar {
+    padding: 0.5rem !important;
+  }
+  
+  .format-toolbar .d-flex {
+    flex-wrap: wrap;
+    gap: 0.25rem !important;
+  }
+  
+  .color-picker {
+    flex-wrap: wrap;
+    gap: 0.25rem !important;
+  }
+  
+  .color-btn {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .rich-text-input {
+    font-size: 16px; /* 防止iOS缩放 */
+  }
+}
+
+/* 富文本内容样式 */
+.rich-text-input strong,
+.rich-text-input b {
+  font-weight: bold;
+}
+
+.rich-text-input em,
+.rich-text-input i {
+  font-style: italic;
+}
+
+/* 确保富文本内容的可读性 */
+.rich-text-input * {
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+/* 选中文本的样式 */
+.rich-text-input::selection {
+  background-color: rgba(0, 123, 255, 0.3);
+}
+
+.rich-text-input::-moz-selection {
+  background-color: rgba(0, 123, 255, 0.3);
+}
+
+/* 按钮组样式优化 */
+.rich-text-editor .btn-group {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rich-text-editor .btn-sm {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 576px) {
+  .rich-text-editor .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .rich-text-editor .btn {
+    width: 100%;
+  }
+  
+  .format-toolbar .d-flex {
+    justify-content: center;
+  }
+}

@@ -24,12 +24,11 @@ const Checklist = sequelize.define('Checklist', {
     comment: '清单项目名称'
   },
   category: {
-    type: DataTypes.ENUM('证件类', '衣物类', '电子设备', '洗护用品', '药品类', '日常用品', '其他'),
+    type: DataTypes.ENUM('证件类', '衣物类', '电子设备', '洗护用品',  '日常用品', '财务类', '医疗用品', '食物类'),
     allowNull: false,
-    defaultValue: '其他',
     validate: {
       isIn: {
-        args: [['证件类', '衣物类', '电子设备', '洗护用品', '药品类', '日常用品', '其他']],
+        args: [['证件类', '衣物类', '电子设备', '洗护用品',  '日常用品', '财务类', '医疗用品', '食物类']],
         msg: '清单项目分类必须是有效的分类'
       }
     },

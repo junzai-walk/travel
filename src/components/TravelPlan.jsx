@@ -4,6 +4,7 @@ import { itineraryService } from '../services/itineraryService.js';
 import { performMigration, needsMigration, getMigrationStatus } from '../services/dataMigration.js';
 import { api, healthCheck } from '../utils/axiosConfig.js';
 import { validateExpenseData, validateItineraryData } from '../utils/dataValidation.js';
+import RichTextEditor from './RichTextEditor.jsx';
 
 const TravelPlan = () => {
   // 默认预算数据
@@ -1090,18 +1091,12 @@ const TravelPlan = () => {
   // 开始编辑行程活动
   const startEditingActivity = (dayIndex, actIndex, field, currentValue) => {
     setEditingActivity({ dayIndex, actIndex, field, originalHtml: currentValue });
+    // 确保传递正确的HTML内容给RichTextEditor
     setEditingActivityValue(currentValue || '');
 
     // 重置选择状态
     setIsSelectionBold(false);
     setCurrentSelection({ start: 0, end: 0 });
-
-    // 对于富文本字段，需要在下一个渲染周期设置HTML内容
-    if (field === 'description' || field === 'tips') {
-      setTimeout(() => {
-        setEditableContent(currentValue || '');
-      }, 10);
-    }
   };
 
   // 取消编辑行程活动
@@ -1117,11 +1112,8 @@ const TravelPlan = () => {
     const { dayIndex, actIndex, field } = editingActivity;
     const newItineraryData = [...itineraryData];
 
-    // 对于富文本字段，从contentEditable元素获取HTML内容
+    // 使用RichTextEditor传递的值
     let valueToSave = editingActivityValue;
-    if (field === 'description' || field === 'tips') {
-      valueToSave = getEditableContent() || editingActivityValue;
-    }
 
     // 更新对应字段的值
     newItineraryData[dayIndex].activities[actIndex][field] = valueToSave;
@@ -1892,7 +1884,7 @@ const TravelPlan = () => {
                                       <strong>B</strong>
                                     </button>
                                     <div className="color-picker d-flex gap-1">
-                                      {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                      {['#000000', '#ffffff','#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
                                         <button
                                           key={color}
                                           type="button"
@@ -1970,7 +1962,7 @@ const TravelPlan = () => {
                                       <strong>B</strong>
                                     </button>
                                     <div className="color-picker d-flex gap-1">
-                                      {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
+                                      {[ '#000000', '#ffffff','#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
                                         <button
                                           key={color}
                                           type="button"
@@ -2201,68 +2193,15 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'description' ? (
                             <div className="description-edit-container mb-3">
-                              <div
-                                contentEditable
-                                onInput={(e) => {
-                                  const html = e.target.innerHTML;
-                                  setEditingActivityValue(html);
-                                }}
-                                onKeyDown={handleActivityKeyPress}
-                                onMouseUp={handleTextSelection}
-                                onKeyUp={handleTextSelection}
-                                onSelect={handleTextSelection}
-                                className="form-control wysiwyg-editor"
-                                style={{
-                                  minHeight: '100px',
-                                  padding: '8px 12px',
-                                  border: '1px solid #ced4da',
-                                  borderRadius: '0.375rem',
-                                  outline: 'none'
-                                }}
-                                suppressContentEditableWarning={true}
-                                data-placeholder="活动描述（所见即所得编辑）"
+                              <RichTextEditor
+                                value={editingActivityValue}
+                                onChange={setEditingActivityValue}
+                                onSave={saveActivityEdit}
+                                onCancel={cancelEditingActivity}
+                                placeholder="活动描述（所见即所得编辑）"
+                                minHeight="100px"
+                                autoFocus={true}
                               />
-                              {/* 富文本编辑工具栏 */}
-                              <div className="format-toolbar mb-2 p-2 bg-light rounded">
-                                <div className="d-flex gap-2 align-items-center">
-                                  <button
-                                    type="button"
-                                    className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                    onClick={() => applyTextFormat('bold')}
-                                    title={isSelectionBold ? "取消加粗" : "加粗"}
-                                  >
-                                    <strong>B</strong>
-                                  </button>
-                                  <div className="color-picker d-flex gap-1">
-                                    {/* <span className="small me-2">颜色:</span> */}
-                                    {/* 红橙黄绿青蓝紫 */}
-                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1', '#000000', '#ffffff'].map(color => (
-                                      <button
-                                        key={color}
-                                        type="button"
-                                        className="btn btn-sm color-btn"
-                                        style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
-                                        onClick={() => applyTextFormat('color', color)}
-                                        title={`设置颜色为 ${color}`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="d-flex gap-2 mt-2">
-                                <button
-                                  className="btn btn-success btn-sm"
-                                  onClick={saveActivityEdit}
-                                >
-                                  ✓ 保存
-                                </button>
-                                <button
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={cancelEditingActivity}
-                                >
-                                  ✕ 取消
-                                </button>
-                              </div>
                             </div>
                           ) : (
                             <div
@@ -2279,67 +2218,15 @@ const TravelPlan = () => {
                            editingActivity.actIndex === actIndex &&
                            editingActivity.field === 'tips' ? (
                             <div className="tips-edit-container">
-                              <div
-                                contentEditable
-                                onInput={(e) => {
-                                  const html = e.target.innerHTML;
-                                  setEditingActivityValue(html);
-                                }}
-                                onKeyDown={handleActivityKeyPress}
-                                onMouseUp={handleTextSelection}
-                                onKeyUp={handleTextSelection}
-                                onSelect={handleTextSelection}
-                                className="form-control wysiwyg-editor"
-                                style={{
-                                  minHeight: '80px',
-                                  padding: '8px 12px',
-                                  border: '1px solid #ced4da',
-                                  borderRadius: '0.375rem',
-                                  outline: 'none'
-                                }}
-                                suppressContentEditableWarning={true}
-                                data-placeholder="提示信息（所见即所得编辑）"
+                              <RichTextEditor
+                                value={editingActivityValue}
+                                onChange={setEditingActivityValue}
+                                onSave={saveActivityEdit}
+                                onCancel={cancelEditingActivity}
+                                placeholder="提示信息（所见即所得编辑）"
+                                minHeight="80px"
+                                autoFocus={true}
                               />
-                              {/* 富文本编辑工具栏 */}
-                              <div className="format-toolbar mb-2 p-2 bg-light rounded">
-                                <div className="d-flex gap-2 align-items-center">
-                                  <button
-                                    type="button"
-                                    className={`btn btn-sm ${isSelectionBold ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                    onClick={() => applyTextFormat('bold')}
-                                    title={isSelectionBold ? "取消加粗" : "加粗"}
-                                  >
-                                    <strong>B</strong>
-                                  </button>
-                                  <div className="color-picker d-flex gap-1">
-                                    {/* <span className="small me-2">颜色:</span> */}
-                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'].map(color => (
-                                      <button
-                                        key={color}
-                                        type="button"
-                                        className="btn btn-sm color-btn"
-                                        style={{backgroundColor: color, width: '20px', height: '20px', padding: 0}}
-                                        onClick={() => applyTextFormat('color', color)}
-                                        title={`设置颜色为 ${color}`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="d-flex gap-2 mt-2">
-                                <button
-                                  className="btn btn-success btn-sm"
-                                  onClick={saveActivityEdit}
-                                >
-                                  ✓ 保存
-                                </button>
-                                <button
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={cancelEditingActivity}
-                                >
-                                  ✕ 取消
-                                </button>
-                              </div>
                             </div>
                           ) : (
                             <div
@@ -2498,12 +2385,22 @@ const TravelPlan = () => {
                       </div>
                       <div className="col-md-12">
                         <label className="form-label">描述</label>
-                        <textarea
-                          className="form-control"
-                          rows="2"
+                        <RichTextEditor
                           value={newBudgetItem.description}
-                          onChange={(e) => setNewBudgetItem({...newBudgetItem, description: e.target.value})}
+                          onChange={(value) => setNewBudgetItem({...newBudgetItem, description: value})}
                           placeholder="详细描述这个预算项目..."
+                          minHeight="80px"
+                          showSaveButtons={false}
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label">省钱小贴士</label>
+                        <RichTextEditor
+                          value={newBudgetItem.tips}
+                          onChange={(value) => setNewBudgetItem({...newBudgetItem, tips: value})}
+                          placeholder="分享一些省钱小贴士..."
+                          minHeight="60px"
+                          showSaveButtons={false}
                         />
                       </div>
                       <div className="col-md-12">
@@ -2579,29 +2476,15 @@ const TravelPlan = () => {
                             </div>
                             {editingBudgetDetail === item.id ? (
                               <div className="budget-detail-edit-container">
-                                <input
-                                  type="text"
+                                <RichTextEditor
                                   value={editingBudgetDetailValue}
-                                  onChange={(e) => setEditingBudgetDetailValue(e.target.value)}
-                                  onKeyDown={(e) => handleBudgetDetailKeyPress(e, item.id)}
-                                  className="form-control form-control-sm"
-                                  autoFocus
+                                  onChange={setEditingBudgetDetailValue}
+                                  onSave={() => saveBudgetDetailEdit(item.id)}
+                                  onCancel={cancelEditingBudgetDetail}
                                   placeholder="输入预算详细说明..."
+                                  minHeight="60px"
+                                  autoFocus={true}
                                 />
-                                <div className="d-flex gap-2 mt-2">
-                                  <button
-                                    className="btn btn-success btn-sm"
-                                    onClick={() => saveBudgetDetailEdit(item.id)}
-                                  >
-                                    ✓
-                                  </button>
-                                  <button
-                                    className="btn btn-secondary btn-sm"
-                                    onClick={cancelEditingBudgetDetail}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
                                 {errorMessage && (
                                   <div className="text-danger small mt-1">{errorMessage}</div>
                                 )}
@@ -2613,9 +2496,8 @@ const TravelPlan = () => {
                                   style={{cursor: 'pointer'}}
                                   onClick={() => startEditingBudgetDetail(item.id, item.detail)}
                                   title="点击编辑备注"
-                                >
-                                  {item.detail}
-                                </p>
+                                  dangerouslySetInnerHTML={renderHTMLContent(item.detail)}
+                                />
                                 <div className="d-flex justify-content-end mt-2">
                                   <button
                                     className="btn btn-outline-danger btn-sm"
@@ -2771,23 +2653,22 @@ const TravelPlan = () => {
                       </div>
                       <div className="col-md-12">
                         <label className="form-label">描述 *</label>
-                        <input
-                          type="text"
-                          className="form-control"
+                        <RichTextEditor
                           value={newExpenseItem.description}
-                          onChange={(e) => setNewExpenseItem({...newExpenseItem, description: e.target.value})}
+                          onChange={(value) => setNewExpenseItem({...newExpenseItem, description: value})}
                           placeholder="详细描述这笔支出..."
-                          required
+                          minHeight="60px"
+                          showSaveButtons={false}
                         />
                       </div>
                       <div className="col-md-12">
                         <label className="form-label">备注</label>
-                        <textarea
-                          className="form-control"
-                          rows="2"
+                        <RichTextEditor
                           value={newExpenseItem.notes}
-                          onChange={(e) => setNewExpenseItem({...newExpenseItem, notes: e.target.value})}
+                          onChange={(value) => setNewExpenseItem({...newExpenseItem, notes: value})}
                           placeholder="其他备注信息..."
+                          minHeight="60px"
+                          showSaveButtons={false}
                         />
                       </div>
                       <div className="col-md-12">
@@ -2863,29 +2744,15 @@ const TravelPlan = () => {
                             </div>
                             {editingActualExpenseDetail === item.id ? (
                               <div className="actual-expense-detail-edit-container">
-                                <input
-                                  type="text"
+                                <RichTextEditor
                                   value={editingActualExpenseDetailValue}
-                                  onChange={(e) => setEditingActualExpenseDetailValue(e.target.value)}
-                                  onKeyDown={(e) => handleActualExpenseDetailKeyPress(e, item.id)}
-                                  className="form-control form-control-sm"
-                                  autoFocus
+                                  onChange={setEditingActualExpenseDetailValue}
+                                  onSave={() => saveActualExpenseDetailEdit(item.id)}
+                                  onCancel={cancelEditingActualExpenseDetail}
                                   placeholder="输入消费详细说明..."
+                                  minHeight="60px"
+                                  autoFocus={true}
                                 />
-                                <div className="d-flex gap-2 mt-2">
-                                  <button
-                                    className="btn btn-success btn-sm"
-                                    onClick={() => saveActualExpenseDetailEdit(item.id)}
-                                  >
-                                    ✓
-                                  </button>
-                                  <button
-                                    className="btn btn-secondary btn-sm"
-                                    onClick={cancelEditingActualExpenseDetail}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
                                 {errorMessage && (
                                   <div className="text-danger small mt-1">{errorMessage}</div>
                                 )}
@@ -2896,9 +2763,8 @@ const TravelPlan = () => {
                                 style={{cursor: 'pointer'}}
                                 onClick={() => startEditingActualExpenseDetail(item.id, item.detail)}
                                 title="点击编辑说明"
-                              >
-                                {item.detail}
-                              </p>
+                                dangerouslySetInnerHTML={renderHTMLContent(item.detail)}
+                              />
                             )}
                           </div>
                         </div>

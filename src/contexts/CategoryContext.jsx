@@ -20,10 +20,7 @@ export const CategoryProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // 获取默认分类
-  const getDefaultCategories = () => [
-    '证件类', '电子设备', '衣物类', '日常用品', '财务类', 
-    '医疗用品', '食物类', '洗护用品'
-  ];
+  const getDefaultCategories = () => ['证件类', '衣物类', '电子设备', '洗护用品',  '日常用品', '财务类', '医疗用品', '食物类'];
 
   // 从API加载分类数据
   const loadCategories = async () => {

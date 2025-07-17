@@ -36,15 +36,15 @@ const Expenses = sequelize.define('Expenses', {
     comment: '支出金额'
   },
   description: {
-    type: DataTypes.STRING(300),
+    type: DataTypes.TEXT,
     allowNull: false,
     validate: {
       notEmpty: {
         msg: '支出描述不能为空'
       },
       len: {
-        args: [1, 300],
-        msg: '支出描述长度必须在1-300字符之间'
+        args: [1, 1000],
+        msg: '支出描述长度必须在1-1000字符之间'
       }
     },
     comment: '支出描述'
@@ -112,8 +112,8 @@ const Expenses = sequelize.define('Expenses', {
     allowNull: true,
     validate: {
       len: {
-        args: [0, 1000],
-        msg: '备注信息不能超过1000字符'
+        args: [0, 2000],
+        msg: '备注信息不能超过2000字符'
       }
     },
     comment: '备注信息'
