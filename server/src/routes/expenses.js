@@ -11,7 +11,7 @@ const router = express.Router();
 // 实际支出验证规则
 const expensesValidation = [
   body('category')
-    .isIn(['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'])
+    .isIn(['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '物品费', '其他费用'])
     .withMessage('支出分类必须是有效的分类'),
   body('amount')
     .isFloat({ min: 0, max: 999999.99 })
@@ -49,8 +49,8 @@ const expensesValidation = [
     .withMessage('是否为计划内支出必须是布尔值'),
   body('budget_reference_id')
     .optional()
-    .isMongoId()
-    .withMessage('预算参考ID必须是有效的MongoDB ObjectId')
+    .isInt({ min: 1 })
+    .withMessage('预算参考ID必须是有效的正整数')
 ];
 
 const idValidation = [

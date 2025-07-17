@@ -58,15 +58,15 @@ const Checklist = () => {
     { id: 1, item: '身份证', checked: false, category: '证件类' },
     { id: 2, item: '手机充电器', checked: false, category: '电子设备' },
     { id: 3, item: '换洗衣物', checked: false, category: '衣物类' },
-    { id: 4, item: '洗漱用品', checked: false, category: '生活用品' },
+    { id: 4, item: '洗漱用品', checked: false, category: '日常用品' },
     { id: 5, item: '现金和银行卡', checked: false, category: '财务类' },
     { id: 6, item: '舒适的鞋子', checked: false, category: '衣物类' },
-    { id: 7, item: '雨伞', checked: false, category: '生活用品' },
+    { id: 7, item: '雨伞', checked: false, category: '日常用品' },
     { id: 8, item: '常用药品', checked: false, category: '医疗用品' },
     { id: 9, item: '相机或拍照设备', checked: false, category: '电子设备' },
     { id: 10, item: '零食和水', checked: false, category: '食物类' },
     { id: 11, item: '防晒霜', checked: false, category: '洗护用品' },
-    { id: 12, item: '湿纸巾', checked: false, category: '生活用品' }
+    { id: 12, item: '湿纸巾', checked: false, category: '日常用品' }
   ];
 
   // 显示保存消息

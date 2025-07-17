@@ -10,11 +10,11 @@ const Expenses = sequelize.define('Expenses', {
     comment: '主键ID'
   },
   category: {
-    type: DataTypes.ENUM('交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'),
+    type: DataTypes.ENUM('交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '物品费', '其他费用'),
     allowNull: false,
     validate: {
       isIn: {
-        args: [['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用']],
+        args: [['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '物品费', '其他费用']],
         msg: '支出分类必须是有效的分类'
       }
     },

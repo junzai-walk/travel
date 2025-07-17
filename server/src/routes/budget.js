@@ -11,7 +11,7 @@ const router = express.Router();
 // 预算参考验证规则
 const budgetReferenceValidation = [
   body('category')
-    .isIn(['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '其他费用'])
+    .isIn(['交通费', '住宿费', '餐饮费', '门票费', '购物费', '娱乐费', '物品费', '其他费用'])
     .withMessage('费用分类必须是有效的分类'),
   body('item_name')
     .notEmpty()

@@ -31,7 +31,7 @@ const categoryNameValidation = [
 
 // 默认分类列表
 const getDefaultCategories = () => [
-  '证件类', '电子设备', '衣物类', '生活用品', '财务类',
+  '证件类', '电子设备', '衣物类', '日常用品', '财务类',
   '医疗用品', '食物类', '洗护用品'
 ];
 
