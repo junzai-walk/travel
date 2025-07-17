@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './Checklist.css';
 import { api } from '../utils/axiosConfig.js';
+import { useCategory } from '../contexts/CategoryContext';
 
 const Checklist = () => {
+  // 使用分类上下文
+  const {
+    categories,
+    addCategory,
+    deleteCategory,
+    isDefaultCategory,
+    isLoading: categoriesLoading
+  } = useCategory();
+
   // 必备清单相关状态
   const [checklistData, setChecklistData] = useState([]);
   const [editingChecklistItem, setEditingChecklistItem] = useState(null);
@@ -10,11 +20,10 @@ const Checklist = () => {
   const [newItemCategory, setNewItemCategory] = useState('');
   const [showSaveMessage, setShowSaveMessage] = useState(false);
 
-  // 可用的分类选项
-  const categories = [
-    '证件类', '电子设备', '衣物类', '生活用品', '财务类', 
-    '医疗用品', '食物类', '护肤用品', '自定义'
-  ];
+  // 自定义分类管理状态
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryError, setCategoryError] = useState('');
 
   // 从API加载数据
   useEffect(() => {
@@ -56,7 +65,7 @@ const Checklist = () => {
     { id: 8, item: '常用药品', checked: false, category: '医疗用品' },
     { id: 9, item: '相机或拍照设备', checked: false, category: '电子设备' },
     { id: 10, item: '零食和水', checked: false, category: '食物类' },
-    { id: 11, item: '防晒霜', checked: false, category: '护肤用品' },
+    { id: 11, item: '防晒霜', checked: false, category: '洗护用品' },
     { id: 12, item: '湿纸巾', checked: false, category: '生活用品' }
   ];
 
@@ -64,6 +73,58 @@ const Checklist = () => {
   const showSaveMessageFunc = () => {
     setShowSaveMessage(true);
     setTimeout(() => setShowSaveMessage(false), 2000);
+  };
+
+  // 添加新分类
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setCategoryError('分类名称不能为空');
+      return;
+    }
+
+    try {
+      await addCategory(newCategoryName.trim());
+      setNewCategoryName('');
+      setShowAddCategory(false);
+      setCategoryError('');
+      showSaveMessageFunc();
+    } catch (error) {
+      setCategoryError(error.message);
+    }
+  };
+
+  // 删除分类
+  const handleDeleteCategory = async (categoryName) => {
+    if (window.confirm(`确定要删除分类"${categoryName}"吗？\n注意：删除分类不会删除该分类下的物品，这些物品将被移动到"自定义"分类。`)) {
+      try {
+        await deleteCategory(categoryName);
+
+        // 将该分类下的物品移动到"自定义"分类
+        const updatedChecklistData = checklistData.map(item =>
+          item.category === categoryName ? { ...item, category: '自定义' } : item
+        );
+        setChecklistData(updatedChecklistData);
+
+        // 更新后端数据
+        for (const item of checklistData.filter(item => item.category === categoryName)) {
+          try {
+            await api.put(`/checklist/${item.id}`, {
+              item_name: item.item,
+              category: '自定义',
+              priority: '中',
+              is_completed: item.checked,
+              notes: ''
+            });
+          } catch (error) {
+            console.error('更新物品分类失败:', error);
+          }
+        }
+
+        showSaveMessageFunc();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
   };
 
   // 切换清单项目的勾选状态
@@ -223,6 +284,86 @@ const Checklist = () => {
           </div>
         )}
 
+        {/* 分类管理 */}
+        <div className="category-management mb-4">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-info text-white">
+              <div className="row align-items-center">
+                <div className="col-md-6">
+                  <h5 className="mb-0">🏷️ 分类管理</h5>
+                </div>
+                <div className="col-md-6 text-md-end">
+                  <button
+                    className="btn btn-outline-light btn-sm"
+                    onClick={() => setShowAddCategory(!showAddCategory)}
+                  >
+                    {showAddCategory ? '取消' : '➕ 添加新分类'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="card-body">
+              {showAddCategory && (
+                <div className="add-category-form mb-3 p-3 bg-light rounded">
+                  <div className="row g-3">
+                    <div className="col-md-8">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => {
+                          setNewCategoryName(e.target.value);
+                          setCategoryError('');
+                        }}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+                        className={`form-control ${categoryError ? 'is-invalid' : ''}`}
+                        placeholder="输入新分类名称..."
+                      />
+                      {categoryError && (
+                        <div className="invalid-feedback">{categoryError}</div>
+                      )}
+                    </div>
+                    <div className="col-md-4">
+                      <button
+                        className="btn btn-success w-100"
+                        onClick={handleAddCategory}
+                        disabled={!newCategoryName.trim()}
+                      >
+                        ✅ 创建分类
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="categories-list">
+                <h6 className="mb-3">当前分类：</h6>
+                <div className="row g-2">
+                  {categories.map(category => (
+                    <div key={category} className="col-auto">
+                      <div className="category-tag d-flex align-items-center">
+                        <span className="badge bg-secondary me-2 p-2">
+                          {category}
+                          {!isDefaultCategory(category) && (
+                            <button
+                              className="btn-close btn-close-white ms-2"
+                              style={{ fontSize: '0.6em' }}
+                              onClick={() => handleDeleteCategory(category)}
+                              title={`删除分类: ${category}`}
+                            ></button>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <small className="text-muted mt-2 d-block">
+                  💡 系统默认分类不能删除，自定义分类可以删除
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* 添加新项目 */}
         <div className="add-item-section mb-5">
           <div className="card border-0 shadow-sm">
@@ -246,6 +387,7 @@ const Checklist = () => {
                     value={newItemCategory}
                     onChange={(e) => setNewItemCategory(e.target.value)}
                     className="form-select"
+                    disabled={categoriesLoading}
                   >
                     <option value="">选择分类</option>
                     {categories.map(category => (
@@ -257,7 +399,7 @@ const Checklist = () => {
                   <button
                     className="btn btn-primary w-100"
                     onClick={addChecklistItem}
-                    disabled={!newChecklistItem.trim() || !newItemCategory}
+                    disabled={!newChecklistItem.trim() || !newItemCategory || categoriesLoading}
                   >
                     ➕ 添加物品
                   </button>

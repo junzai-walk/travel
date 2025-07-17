@@ -105,6 +105,9 @@ async function startServer() {
       const { default: expensesRoutes } = await import('./routes/expenses.js');
       logger.info('expenses 路由导入成功');
 
+      const { default: categoriesRoutes } = await import('./routes/categories.js');
+      logger.info('categories 路由导入成功');
+
       app.use('/api/checklist', checklistRoutes);
       logger.info('checklist 路由注册成功');
 
@@ -119,6 +122,9 @@ async function startServer() {
 
       app.use('/api/expenses', expensesRoutes);
       logger.info('expenses 路由注册成功');
+
+      app.use('/api/categories', categoriesRoutes);
+      logger.info('categories 路由注册成功');
 
       logger.info('所有 API 路由已加载');
     } else {

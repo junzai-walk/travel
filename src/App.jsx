@@ -9,6 +9,8 @@ import Food from './components/Food'
 import Accommodation from './components/Accommodation'
 import Map from './components/Map'
 import ApiTest from './components/ApiTest'
+import { BudgetProvider } from './contexts/BudgetContext'
+import { CategoryProvider } from './contexts/CategoryContext'
 
 function App() {
   const [activeSection, setActiveSection] = useState('home')
@@ -71,12 +73,16 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Header activeSection={activeSection} setActiveSection={setActiveSection} />
-      <main className="main-content container-fluid p-0">
-        {renderContent()}
-      </main>
-    </div>
+    <BudgetProvider>
+      <CategoryProvider>
+        <div className="app">
+          <Header activeSection={activeSection} setActiveSection={setActiveSection} />
+          <main className="main-content container-fluid p-0">
+            {renderContent()}
+          </main>
+        </div>
+      </CategoryProvider>
+    </BudgetProvider>
   )
 }
 

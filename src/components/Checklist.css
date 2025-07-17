@@ -171,3 +171,58 @@
   border-radius: 4px;
   transition: width 0.3s ease;
 }
+
+/* 分类管理样式 */
+.category-management .card-header {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+}
+
+.add-category-form {
+  border: 2px dashed #17a2b8;
+  transition: all 0.3s ease;
+}
+
+.add-category-form:hover {
+  border-color: #138496;
+  background-color: #f8f9fa !important;
+}
+
+.category-tag .badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.category-tag .badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.category-tag .btn-close {
+  transition: all 0.2s ease;
+}
+
+.category-tag .btn-close:hover {
+  transform: scale(1.2);
+}
+
+.categories-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* 分类标签动画 */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.category-tag {
+  animation: slideInRight 0.3s ease-out;
+}

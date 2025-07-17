@@ -290,17 +290,26 @@ const TravelPlan = () => {
   // 加载预算数据（本地备用）
   const loadBudgetData = () => {
     const savedBudget = localStorage.getItem('xuzhou-travel-budget');
+    let loadedData;
     if (savedBudget) {
       try {
         const parsedBudget = JSON.parse(savedBudget);
         setBudgetData(parsedBudget);
+        loadedData = parsedBudget;
       } catch (error) {
         console.error('Error loading budget data:', error);
         setBudgetData(defaultBudgetData);
+        loadedData = defaultBudgetData;
       }
     } else {
       setBudgetData(defaultBudgetData);
+      loadedData = defaultBudgetData;
     }
+
+    // 触发自定义事件，通知其他组件预算数据已加载
+    window.dispatchEvent(new CustomEvent('budgetDataChanged', {
+      detail: { budgetData: loadedData }
+    }));
   };
 
   // 从API加载实际支出数据
@@ -446,6 +455,11 @@ const TravelPlan = () => {
     setBudgetData(newBudgetData);
     setShowSaveMessage(true);
     setTimeout(() => setShowSaveMessage(false), 2000);
+
+    // 触发自定义事件，通知其他组件预算数据已更新
+    window.dispatchEvent(new CustomEvent('budgetDataChanged', {
+      detail: { budgetData: newBudgetData }
+    }));
   };
 
   // 保存实际消费数据到localStorage

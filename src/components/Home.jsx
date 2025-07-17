@@ -1,8 +1,14 @@
 import React from 'react';
 import './Home.css';
 import Weather from './Weather';
+import { useBudget } from '../contexts/BudgetContext';
 
 const Home = ({ setActiveSection }) => {
+  // 使用预算上下文获取动态预算数据
+  const { totalAmount, formatAmount, isLoading, budgetData, error } = useBudget();
+
+  // 调试信息
+  console.log('Home组件 - 预算数据:', { totalAmount, isLoading, budgetData, error });
   const highlights = [
     {
       icon: '🚄',
@@ -30,9 +36,14 @@ const Home = ({ setActiveSection }) => {
     }
   ];
 
+  // 动态生成快速统计数据，预算参考使用实时数据
   const quickStats = [
     { label: '旅行时长', value: '2天2夜', icon: '📅' },
-    { label: '预算参考', value: '¥1543', icon: '💰' },
+    {
+      label: '预算参考',
+      value: isLoading ? '加载中...' : `¥${formatAmount(totalAmount)}`,
+      icon: '💰'
+    },
     { label: '交通方式', value: '高铁', icon: '🚄' },
     { label: '适合人群', value: '情侣', icon: '💕' }
   ];
@@ -241,6 +252,30 @@ const Home = ({ setActiveSection }) => {
           </div>
         </div>
       </section>
+
+      {/* Debug Info - 临时调试信息 */}
+      {process.env.NODE_ENV === 'development' && (
+        <section className="debug-info py-3 bg-warning bg-opacity-25">
+          <div className="container">
+            <div className="row">
+              <div className="col-12">
+                <h6>🔍 调试信息</h6>
+                <small>
+                  预算总额: ¥{formatAmount(totalAmount)} |
+                  加载状态: {isLoading ? '加载中' : '已完成'} |
+                  数据项数: {budgetData?.length || 0} |
+                  错误: {error || '无'}
+                </small>
+                {budgetData && budgetData.length > 0 && (
+                  <div className="mt-2">
+                    <small>数据来源: {budgetData.map(item => `${item.category}:¥${item.amount}`).join(', ')}</small>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Call to Action */}
       <section className="final-cta py-5">
