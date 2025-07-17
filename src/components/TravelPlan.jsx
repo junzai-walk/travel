@@ -2040,7 +2040,7 @@ const TravelPlan = () => {
                                     <strong>B</strong>
                                   </button>
                                   <div className="color-picker d-flex gap-1">
-                                    {['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1', '#000000', '#ffffff'].map(color => (
+                                    {[ '#000000', '#ffffff','#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1', '#000000', '#ffffff'].map(color => (
                                       <button
                                         key={color}
                                         type="button"
