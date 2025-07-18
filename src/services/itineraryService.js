@@ -80,7 +80,7 @@ export const transformBackendToFrontend = (backendData) => {
           activity: item.activity,
           description: item.description || '',
           tips: item.tips || '',
-          icon: inferIcon(item.activity),
+          icon: item.icon || inferIcon(item.activity), // 优先使用数据库中的图标，否则推断
           location: item.location || '',
           duration: item.duration || null,
           status: item.status || '计划中',
@@ -142,6 +142,7 @@ export const transformFrontendToBackend = (frontendData, preserveOriginalDates =
         activity: activity.activity,
         description: activity.description || '',
         tips: activity.tips || '',
+        icon: activity.icon || '📍', // 包含图标字段
         location: activity.location || '',
         duration: activity.duration, // 让验证工具处理null值
         status: activity.status || '计划中'
@@ -215,7 +216,7 @@ export class ItineraryService {
           if (existingItem) {
             // 检测变化的字段
             const changedFields = {};
-            const fieldsToCheck = ['date', 'time', 'activity', 'description', 'tips', 'location', 'duration', 'status'];
+            const fieldsToCheck = ['date', 'time', 'activity', 'description', 'tips', 'icon', 'location', 'duration', 'status'];
 
             fieldsToCheck.forEach(field => {
               if (item[field] !== existingItem[field]) {
@@ -273,6 +274,7 @@ export class ItineraryService {
         activity: activity.activity,
         description: activity.description || '',
         tips: activity.tips || '',
+        icon: activity.icon || '📍', // 包含图标字段
         location: activity.location || '',
         duration: activity.duration || null,
         status: activity.status || '计划中'

@@ -61,7 +61,11 @@ const itineraryValidation = [
   body('status')
     .optional()
     .isIn(['计划中', '进行中', '已完成', '已取消'])
-    .withMessage('行程状态必须是有效的状态')
+    .withMessage('行程状态必须是有效的状态'),
+  body('icon')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('图标标识不能超过50字符')
 ];
 
 const idValidation = [
@@ -136,6 +140,7 @@ router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, re
     activity,
     description,
     tips,
+    icon,
     location,
     duration,
     status = '计划中'
@@ -147,6 +152,7 @@ router.post('/', itineraryValidation, validateRequest, catchAsync(async (req, re
     activity,
     description,
     tips,
+    icon,
     location,
     duration,
     status
@@ -173,6 +179,7 @@ router.put('/:id',
       activity,
       description,
       tips,
+      icon,
       location,
       duration,
       status
@@ -185,6 +192,7 @@ router.put('/:id',
         activity,
         description,
         tips,
+        icon,
         location,
         duration,
         status
@@ -220,7 +228,7 @@ router.patch('/:id',
 
     // 只更新请求体中提供的字段
     const updateFields = {};
-    const allowedFields = ['date', 'time', 'activity', 'description', 'tips', 'location', 'duration', 'status'];
+    const allowedFields = ['date', 'time', 'activity', 'description', 'tips', 'icon', 'location', 'duration', 'status'];
 
     // 只包含请求中实际提供的字段
     allowedFields.forEach(field => {

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // 开发服务器配置
   server: {
-    port: 5173,
+    port: 5177,
     host: true,
     // API代理配置
     proxy: {

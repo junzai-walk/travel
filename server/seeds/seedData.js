@@ -50,21 +50,21 @@ const defaultItineraryData = [
   // 2024年7月19日（周六）- 全天游览
   { date: '2025-07-19', time: '04:15', activity: '云龙山', description: '看日出路线：北门上山（正对博物馆大门），20min就能爬上观景台', tips: '保持良好的精神状态', location: '酒店', duration: 60, status: '计划中', icon: 'FaMountain' },
   { date: '2025-07-19', time: '06:30', activity: '早餐·米线', description: 'PlanA：一品飘香健康米线（9:00开门）PlanB：九中牛记米线（8:00开门）PlanC：建国刘记米线（兴隆街店）6:00开门，电动车16minPlanD：马市街饣它汤（据说周末人巨多，得巨早排队）', location: '里堂水线', duration: 60, status: '计划中', icon: 'FaUtensils' },
-  { date: '2025-07-19', time: '07:30', activity: '回酒店补觉', description: '太早起来，得睡个回笼觉~', tips: '路线：🔴滑湖公园门口🔴石佛寺入口🔴海拔公园🔴云龙山主道🔴会山公园（水杉大道出来）🔴红楼（汉文化）🔴彭祖园🔴龙华寺（看中药博物馆）🔴三环路口石佛寺入口🔴湖滨公园🔴观景中药博物馆🔴会山公园🔴青年路（观景台，拍照最美）🔴星马上坡小路🔴观景台🔴滑湖公园门口', location: '云龙山', duration: 60, status: '计划中', icon: 'FaBed' },
-  { date: '2025-07-19', time: '11:00', activity: '云龙湖（寺院上行）', description: '从云龙山景区上行', tips: '可以俯瞰云龙湖全景', location: '云龙湖', duration: 90, status: '计划中', icon: 'MdNature' },
+  { date: '2025-07-19', time: '07:30', activity: '回酒店补觉', description: '太早起来，得睡个回笼觉~', tips: '', location: '云龙山', duration: 60, status: '计划中', icon: 'FaBed' },
+  { date: '2025-07-19', time: '11:00', activity: '起床化妆', description: '懒人可以再多睡一会儿', tips: '', location: '云龙湖', duration: 90, status: '计划中', icon: 'MdNature' },
   { date: '2025-07-19', time: '12:00', activity: '午餐', description: 'PlanA：什一餐厅（矿山东路总店）PlanB：老家地锅鸡 PlanC：田记餐馆 其他：云龙让茶（茉莉山楂、清平乐、落玫观山）、夏抱冰、蜜城之恋（西红柿鸡蛋汤、水果茶）', tips: '品尝当地特色菜', location: '餐厅', duration: 90, status: '计划中', icon: 'MdRestaurant' },
   { date: '2025-07-19', time: '15:00', activity: '徐州乐园加勒比水世界', description: '晚场15:00点进。记得带手机防水袋、泳衣、拖鞋、泳圈、速干毛巾哦', tips: '注意防晒和安全', location: '徐州乐园', duration: 270, status: '计划中', icon: 'FaSwimmingPool' },
   { date: '2025-07-19', time: '19:30', activity: '晚餐', description: 'PlanA：贾青羊肉串（户部山店）PlanB：老广烧烤（户部山店）PlanC：三只羊（户部山店） PlanD：高姐烧烤 哪个不用排队吃那个', location: '餐厅', duration: 90, status: '计划中', icon: 'FaUtensils' },
   { date: '2025-07-19', time: '20:30', activity: '云龙湖', description: '路线：📍滨湖公园东门➡️右转进入湖东路➡️汉画像石馆➡️云龙山索道西站➡️金山公园（水杉步道拍照出片）➡️红绿灯右转进入湖南路➡️彭城风华（每晚演出时间7点） ➡️龙华桥（夏天赏荷花）➡️沉水廊道（观湖中锦鲤）➡️三岔路口右转进入珠山东路➡️天师广场（免费观瀑布）➡️路口右转入湖中路➡️水族馆（景点在改造升级，可与周边的猫咪嬉戏）➡️音乐桥（观日落、拍照都超美）➡️直行上坡小路➡️如意路➡️滨湖新天地步行街（高端美食）➡️水晶宫码头（观湖光山色）➡️滨湖公园东门', tips: '夜景很美，适合拍照', location: '云龙湖', duration: 90, status: '计划中', icon: 'FaCamera' },
-  { date: '2025-07-19', time: '22:00', activity: '回酒店休息', description: '结束充实的一天', tips: '早点休息，恢复体力', location: '酒店', duration: 600, status: '计划中', icon: 'FaBed' },
+  { date: '2025-07-19', time: '22:00', activity: '回酒店休息', description: '累了一天，好好休息', tips: '早点休息，恢复体力', location: '酒店', duration: 600, status: '计划中', icon: 'FaBed' },
 
   // 2024年7月20日（周日）- 返程日
-  { date: '2025-07-20', time: '08:00', activity: '起床', description: '最后一天的行程', tips: '整理行李，准备退房', location: '酒店', duration: 60, status: '计划中', icon: 'FaSun' },
+  { date: '2025-07-20', time: '08:00', activity: '起床', description: '化个美美的妆，开启元气满满的一天', tips: '整理行李，准备退房', location: '酒店', duration: 60, status: '计划中', icon: 'FaSun' },
   { date: '2025-07-20', time: '09:00', activity: '早餐', description: '老六中米线总店', tips: '品尝最后一顿徐州美食', location: '米线店', duration: 30, status: '计划中', icon: 'FaUtensils' },
   { date: '2025-07-20', time: '10:00', activity: '老六中-彭祖园', description: '1公里，步行16min', tips: '根据实际需要安排', location: '新租房', duration: 90, status: '计划中', icon: 'FaWalking' },
-  { date: '2025-07-20', time: '11:00', activity: '午餐+购物', description: 'PlanA：王家味炒鸡店（永嘉金色雅筑店），打车16min，推荐：炒鸡、一品茄子、松鼠鱼、铁板豆腐 PlanB：大张洛馍村（就近）', tips: '蜜三刀、牛蒡茶都是不错的选择', location: '商场/特产店', duration: 90, status: '计划中', icon: 'FaShoppingBag' },
-  { date: '2025-07-20', time: '12:30', activity: '徐州博物馆', description: '游览时长预计2小时', location: '徐州博物馆', duration: 128, status: '计划中', icon: 'MdMuseum' },
-  { date: '2025-07-20', time: '14:50', activity: '前往徐州站', description: '地铁或打车', tips: '预留充足时间，注意车站区别', location: '徐州站', duration: 48, status: '计划中', icon: 'FaCar' },
+  { date: '2025-07-20', time: '11:00', activity: '午餐+彭祖园→ 午餐', description: 'PlanA：王家味炒鸡店（永嘉金色雅筑店），打车16min，推荐：炒鸡、一品茄子、松鼠鱼、铁板豆腐PlanB：大张洛馍村（就近）PlanC：逛吃，小吃 PlanB：大张洛馍村（就近）', tips: '蜜三刀、牛蒡茶都是不错的选择', location: '商场/特产店', duration: 90, status: '计划中', icon: 'FaShoppingBag' },
+  { date: '2025-07-20', time: '12:30', activity: '午餐店→ 徐州博物馆', description: '游览时长预计2小时', location: '徐州博物馆', duration: 128, status: '计划中', icon: 'MdMuseum' },
+  { date: '2025-07-20', time: '14:50', activity: '徐州博物馆→ 徐州站', description: '地铁或打车', tips: '预留充足时间，注意车站区别', location: '徐州站', duration: 48, status: '计划中', icon: 'FaCar' },
   { date: '2025-07-20', time: '15:38', activity: '徐州站 → 南京站', description: '返程火车K347，硬卧，04车14号下铺、18号中铺。15:38-19:51，约4小时13分钟', tips: '可以在车上整理照片，回味旅程', location: '火车上', duration: 253, status: '计划中', icon: 'FaTrain' },
   { date: '2025-07-20', time: '19:51', activity: '南京站', description: '愉快的徐州之旅结束', tips: '记得分享旅行的美好回忆', location: '南京站', duration: 30, status: '计划中', icon: 'FaHome' }
 ];

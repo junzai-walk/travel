@@ -123,11 +123,12 @@ export const validateItineraryData = (itineraryData) => {
     activity: itineraryData.activity || '新活动',
     description: itineraryData.description || '',
     tips: itineraryData.tips || '',
+    icon: itineraryData.icon || '📍', // 添加图标字段验证
     location: itineraryData.location || '',
     duration: validateDuration(itineraryData.duration),
     status: itineraryData.status || '计划中'
   };
-  
+
   return validated;
 };
 
