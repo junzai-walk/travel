@@ -124,6 +124,18 @@ const Itinerary = sequelize.define('Itinerary', {
       }
     },
     comment: '行程状态'
+  },
+  icon: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: '📍',
+    validate: {
+      len: {
+        args: [0, 50],
+        msg: '图标标识不能超过50字符'
+      }
+    },
+    comment: '活动图标（支持emoji或React图标key）'
   }
 }, {
   tableName: 'travel_itinerary',

@@ -435,3 +435,79 @@
   }
 }
 
+/* 活动图标样式 */
+.activity-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.activity-icon:hover {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.activity-icon.editable-field {
+  cursor: pointer;
+}
+
+.activity-icon.editable-field:hover::after {
+  content: "点击更换图标";
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 确保图标在拖拽时保持样式 */
+.activity-item.dragging .activity-icon {
+  pointer-events: none;
+}
+
+.activity-item.dragging .activity-icon:hover::after {
+  display: none;
+}
+
+/* 移动端图标样式优化 */
+@media (max-width: 768px) {
+  .activity-icon {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  .activity-icon.editable-field:hover::after {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.25rem;
+  }
+}
+

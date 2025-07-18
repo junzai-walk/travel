@@ -5,6 +5,8 @@ import { performMigration, needsMigration, getMigrationStatus } from '../service
 import { api, healthCheck } from '../utils/axiosConfig.js';
 import { validateExpenseData, validateItineraryData } from '../utils/dataValidation.js';
 import RichTextEditor from './RichTextEditor.jsx';
+import IconSelector from './IconSelector.jsx';
+import { getIconByKey, convertEmojiToIcon } from '../utils/iconData.js';
 
 const TravelPlan = () => {
   // 默认预算数据
@@ -84,6 +86,11 @@ const TravelPlan = () => {
   const [showFormatToolbar, setShowFormatToolbar] = useState(false);
   const [currentSelection, setCurrentSelection] = useState({ start: 0, end: 0 });
   const [isSelectionBold, setIsSelectionBold] = useState(false);
+
+  // 图标选择器相关状态
+  const [showIconSelector, setShowIconSelector] = useState(false);
+  const [editingIcon, setEditingIcon] = useState(null); // 格式: {dayIndex, actIndex}
+  const [currentEditingIcon, setCurrentEditingIcon] = useState('');
 
 
 
@@ -1701,6 +1708,88 @@ const TravelPlan = () => {
     }
   };
 
+  // 图标选择相关函数
+  const startEditingIcon = (dayIndex, actIndex) => {
+    const activity = itineraryData[dayIndex].activities[actIndex];
+    setEditingIcon({ dayIndex, actIndex });
+    setCurrentEditingIcon(activity.icon || '📍');
+    setShowIconSelector(true);
+  };
+
+  const handleIconSelect = async (iconKey) => {
+    if (!editingIcon) return;
+
+    try {
+      setIsLoading(true);
+      setApiError('');
+
+      const { dayIndex, actIndex } = editingIcon;
+      const newItineraryData = [...itineraryData];
+
+      // 验证索引有效性
+      if (!newItineraryData[dayIndex] || !newItineraryData[dayIndex].activities[actIndex]) {
+        throw new Error('活动项目不存在');
+      }
+
+      // 更新图标
+      newItineraryData[dayIndex].activities[actIndex].icon = iconKey;
+
+      await saveItineraryData(newItineraryData);
+
+      // 显示成功提示
+      setShowSaveMessage(true);
+      setTimeout(() => setShowSaveMessage(false), 2000);
+
+    } catch (error) {
+      console.error('更新图标失败:', error);
+      setApiError(error.message || '更新图标失败，请重试');
+
+      // 错误时不关闭选择器，让用户可以重试
+      setIsLoading(false);
+      return;
+    }
+
+    // 成功时关闭选择器
+    setIsLoading(false);
+    setShowIconSelector(false);
+    setEditingIcon(null);
+    setCurrentEditingIcon('');
+  };
+
+  const closeIconSelector = () => {
+    setShowIconSelector(false);
+    setEditingIcon(null);
+    setCurrentEditingIcon('');
+  };
+
+  // 渲染图标的辅助函数
+  const renderActivityIcon = (icon) => {
+    if (!icon) return '📍';
+
+    // 如果是emoji，直接返回
+    if (typeof icon === 'string' && icon.length <= 2) {
+      return icon;
+    }
+
+    // 如果是React图标key，渲染对应的图标组件
+    if (typeof icon === 'string') {
+      const IconComponent = getIconByKey(icon);
+      if (IconComponent) {
+        return <IconComponent />;
+      }
+
+      // 如果找不到对应的图标，尝试转换emoji
+      const convertedIcon = convertEmojiToIcon(icon);
+      if (convertedIcon && convertedIcon.icon) {
+        const ConvertedIconComponent = convertedIcon.icon;
+        return <ConvertedIconComponent />;
+      }
+    }
+
+    // 默认返回地标图标
+    return '📍';
+  };
+
   // 重置行程为默认数据
   const resetItineraryToDefault = async () => {
     if (window.confirm('确定要重置为默认行程吗？这将清除您的所有自定义修改。')) {
@@ -2136,7 +2225,14 @@ const TravelPlan = () => {
                       <div className="activity-content card border-0 shadow-sm">
                         <div className="card-body">
                           <div className="activity-header d-flex align-items-center mb-3">
-                            <span className="activity-icon fs-4 me-3">{activity.icon}</span>
+                            <span
+                              className="activity-icon fs-4 me-3 editable-field"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => startEditingIcon(dayIndex, actIndex)}
+                              title="点击更换图标"
+                            >
+                              {renderActivityIcon(activity.icon)}
+                            </span>
                             {editingActivity &&
                              editingActivity.dayIndex === dayIndex &&
                              editingActivity.actIndex === actIndex &&
@@ -2950,6 +3046,15 @@ const TravelPlan = () => {
           </div>
         </div>
       </div>
+
+      {/* 图标选择器 */}
+      <IconSelector
+        isOpen={showIconSelector}
+        currentIcon={currentEditingIcon}
+        onIconSelect={handleIconSelect}
+        onClose={closeIconSelector}
+        position="center"
+      />
     </div>
   );
 };
